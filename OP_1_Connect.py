@@ -8,6 +8,16 @@ class OP_1_Connect:
         OP1_Synth_Patch_Count = 0
         OP1_Sample_Patch_Count = 0
         OP1_Drum_Patch_Count = 0
+        tapeAndAlbumPaths = []
+
+    #   Check all usb devices
+    #   Check Available
+    #   Search Time-out
+    #   updateOP1Path
+
+    def getAllUSBDevices(self):
+        # Get all the usb devices available and connects to the op-1 unit
+        print("Prints all usb devices")
 
     def findStrInAif(self, lookingfor, pathToTargetFile):
         with open(pathToTargetFile, 'rb') as reader:
@@ -15,6 +25,10 @@ class OP_1_Connect:
                 return True
             else:
                 return False
+
+    def getFilesFromPath(self, path):
+        import os
+        return os.listdir(path)
 
     def list_files(self, startpath):
         sampleEngine = []
@@ -32,8 +46,6 @@ class OP_1_Connect:
                 elif f.endswith('.aif') and not f.startswith("."):
                     others.append(currentFilePath)
 
-        # print(len(sampleEngine))
-        # print(len(filePaths))
         return [sampleEngine, synthEngine, others]
 
     # "type":"sampler"
@@ -69,5 +81,5 @@ class OP_1_Connect:
             callback(copied)
 
 
-temp = OP_1_Connect()
-temp.importOP1Dirs()
+# temp = OP_1_Connect()
+# temp.importOP1Dirs()
