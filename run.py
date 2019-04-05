@@ -1,11 +1,9 @@
-import time
+# import time
 # import cv2
-import numpy as np
+# import numpy as np
 from PIL import Image, ImageDraw
-
 import Menu_Page_Router
 from FileBrowser import renderFolders
-
 from GPIO_Init import getKeyStroke, displayImage, getFont
 from OP_1_Connection import start_OP_1_Connection, is_connected, currentStorageStatus
 from config import config, savePaths

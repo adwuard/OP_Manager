@@ -1,13 +1,10 @@
 import RPi.GPIO as GPIO
-
-import time
-
-import Adafruit_GPIO.SPI as SPI
 import SSD1306
-
-from PIL import Image
-from PIL import ImageDraw
 from PIL import ImageFont
+# import Adafruit_GPIO.SPI as SPI
+
+__author__ = "Hsuan Han Lai (Edward Lai)"
+__date__ = "2019-04-02"
 
 # Input pins:
 L_pin, R_pin, C_pin, U_pin, D_pin = 27, 23, 4, 17, 22
@@ -28,9 +25,9 @@ RST = 24
 # 128x64 display with hardware I2C:
 disp = SSD1306.SSD1306_128_64(rst=RST)
 
+# SPI Protocol Config
 # Note you can change the I2C address by passing an i2c_address parameter like:
 # disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
-
 # Alternatively you can specify an explicit I2C bus number, for example
 # with the 128x32 display you would use:
 # disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST, i2c_bus=2)
@@ -39,10 +36,6 @@ disp = SSD1306.SSD1306_128_64(rst=RST)
 # Initialize library.
 disp.begin()
 
-
-# Clear display.
-# disp.clear()
-# disp.display()
 
 def getLargeFont():
     return ImageFont.truetype("Fonts/Georgia Bold.ttf", 12)

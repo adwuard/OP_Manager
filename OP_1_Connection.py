@@ -72,7 +72,7 @@ def start_OP_1_Connection():
     # Render Please Connect Screen
     wait_for_connection()
     mountpath = getmountpath()
-    # mountPoint = ""
+    config["USB_Mount_Path"] = mountpath
 
     for i, disk in enumerate(disk_partitions()):
         if disk.device == mountpath:
@@ -83,13 +83,11 @@ def start_OP_1_Connection():
 
 
 def unmount_OP_1():
-    unmountdevice(config["OP_1_Mounted_Dir"])
+    unmountdevice(config["USB_Mount_Path"])
 
 
 def list_files(startpath):
     patchType = ""
-    fx = ""
-    lfo = ""
     sampleEngine = []
     synthEngine = []
     drum = []
@@ -123,7 +121,4 @@ def update_Current_Storage_Status():
     sampler, synth, drum = list_files(savePaths["OP_1_Drum"])
     currentStorageStatus["drum"] = len(drum)
 
-# update_Current_Storage_Status()
-# print(get_OP1_Storage_Status())
 
-# start_OP_1_Connection()

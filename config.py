@@ -2,7 +2,7 @@ config = {
     "OP_1_USB_ID": "*Teenage_OP-1*",
     "USB_VENDOR": 0x2367,
     "USB_PRODUCT": 0x0002,
-
+    "USB_Mount_Path": "",
     "OP_1_Mounted_Dir": "",
     # "OP_1_Mounted_Dir": "/Users/edwardlai/Documents/Git Ripos/OP1_File_Organizer/SampleOP1Dir/",
     # "LocalBackupPath": "/Users/edwardlai/Documents/Git Ripos/OP1_File_Organizer/OP_1_Patches_Lib/",

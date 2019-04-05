@@ -1,11 +1,14 @@
+import os
 import subprocess
 import time
 from PIL import ImageFont, Image, ImageDraw
 from FileBrowser import renderFolders
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont
-from OP_1_Connection import update_Current_Storage_Status, get_OP1_Storage_Status, currentStorageStatus, getMountPath
+from OP_1_Connection import update_Current_Storage_Status, get_OP1_Storage_Status, currentStorageStatus, getMountPath, \
+    unmount_OP_1
 from menu_structure import MainPage
 from config import config, savePaths
+from run import start
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -100,11 +103,11 @@ class PageRouter:
 
         # ===========Patches Actions===========
         if event == "OP1_Synth_Patches":
-            renderFolders(getMountPath()+"/synth", currentStorageStatus["synth"], 1)
+            renderFolders(getMountPath() + "/synth", currentStorageStatus["synth"], 1)
             self.renderPage(-1, 1)
 
         if event == "OP1_Drum_Patches":
-            renderFolders(getMountPath()+"/drum", currentStorageStatus["drum"], 1)
+            renderFolders(getMountPath() + "/drum", currentStorageStatus["drum"], 1)
             self.renderPage(-1, 1)
 
         if event == "UploadSynthPatches":
@@ -115,14 +118,21 @@ class PageRouter:
             renderFolders(savePaths["Local_Drum"], currentStorageStatus["drum"], 1)
             self.renderPage(-1, 1)
 
-
-
         if event == "act_5_Backup_All_Patches":
             pass
 
         # ===========Eject Actions===========
         if event == "act_ESC_Eject_OP_1":
-            pass
+            # unmount_OP_1()
+            cmd = "sudo umount " + config["OP_1_Mounted_Dir"]
+            try:
+                os.system(cmd)
+            except:
+                pass
+            print("Ejected")
+            time.sleep(5)
+            start()
+            # pass
 
         if event == "checkStorage":
             image = Image.new('1', (128, 64))
@@ -142,7 +152,6 @@ class PageRouter:
             getAnyKeyEvent()
             self.renderPage(-1, 1)
 
-    # Old
     def renderStandardMenu(self, draw, currentDist, cursor):
         font = ImageFont.truetype("Fonts/Georgia Bold.ttf", 10)
         draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
@@ -150,9 +159,9 @@ class PageRouter:
         for i in currentDist:
             if iterCount == 0:
                 draw.rectangle([(0, 0), (128, 10)], 'white')
-                draw.text(displayLine(iterCount, 2), i[0], fill='black', font=font)
+                draw.text(displayLine(iterCount, 2), str(i[0]), fill='black', font=font)
             else:
-                draw.text(displayLine(iterCount, 10), i[0], fill='white', font=font)
+                draw.text(displayLine(iterCount, 10), str(i[0]), fill='white', font=font)
             iterCount += 1
         # if cursor != -1:
         draw.text(displayLine(cursor, 2), ">", fill='white', font=font)

@@ -1,14 +1,14 @@
-# import math
 import math
 import os
 import time
 from os import listdir
-from os.path import isdir, isfile, basename
-
 from PIL import Image, ImageDraw
-from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont, getLargeFont
+from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay
 from config import config, savePaths
 from file_util import getDirFileList, analyzeAIF
+
+__author__ = "Hsuan Han Lai (Edward Lai)"
+__date__ = "2019-04-02"
 
 
 class fileBrowser:
@@ -60,8 +60,8 @@ class fileBrowser:
     def getCopyQueue(self):
         return self.copyQueue
 
-    # def setDirList(self):
-    #     self.currentDirLst
+    def setDirList(self, lst):
+        self.currentDirLst = lst
 
     def getDirList(self):
         return self.currentDirLst
@@ -115,62 +115,40 @@ def displayLine(line, indent):
 
 
 def scale(val, src, dst):
-    return math.floor((float(val - src[0]) / float(src[1] - src[0])) * (dst[1] - dst[0]) + dst[0])
+    return (float(val - src[0]) / float(src[1] - src[0])) * (dst[1] - dst[0]) + dst[0]
     # return int(((val - src[0]) / (src[1] - src[0])) * (dst[1] - dst[0]) + dst[0])
 
 
 def getOffset(lstFull, currentPointer, scrollBarSize):
     scrollFullSize = 54
     availableScrolling = int(scrollFullSize - scrollBarSize)
-    return scale(currentPointer, (0, len(lstFull) - 1), (0, availableScrolling))
+    return math.floor(scale(currentPointer, (0, len(lstFull) - 1), (0, availableScrolling)))
 
 
 def getScrollBarSize(lst):
     scrollFullSize = 54
     lstSize = len(lst) - 1
     if lstSize > 5:
-        if 10 >= lstSize > 5:
-            return scrollFullSize * 0.5
-        elif 15 >= lstSize > 10:
-            return scrollFullSize * 0.45
-        elif 20 >= lstSize > 15:
-            return scrollFullSize * 0.40
-        elif 25 >= lstSize > 20:
-            return scrollFullSize * 0.35
-        elif 30 >= lstSize > 25:
-            return scrollFullSize * 0.30
-        elif 35 >= lstSize > 30:
-            return scrollFullSize * 0.25
-        elif 40 >= lstSize > 35:
-            return scrollFullSize * 0.20
-        elif 45 >= lstSize > 40:
-            return scrollFullSize * 0.15
-        elif 50 >= lstSize > 45:
-            return scrollFullSize * 0.10
-        else:
-            return scrollFullSize * 0.05
+        return scrollFullSize * scale(lstSize, (5, 50), (0.5, 0.05))
 
 
 # RenderOptionsMenu(["Upload", "Rename", "Delete"]_
 def RenderOptionsMenu(lst):
-    userChoice = ""
     cursor = 1
-
-    # Animation of right slide in
     while True:
         image = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(image)
+
         draw.rectangle([(0, 0), (128, 10)], 'white')
         draw.text(displayLine(0, 2), "Actions", fill='black', font=getFont())
 
-        iterCount = 1
-        for i in lst:
-            draw.text(displayLine(iterCount, 10), str(i), fill='white', font=getFont())
-            iterCount += 1
+        for i in range(0, len(lst)):
+            draw.text(displayLine(i, 10), str(lst[i]), fill='white', font=getFont())
+
         draw.text(displayLine(cursor, 2), ">", fill='white', font=getFont())
         displayImage(image)
-
         time.sleep(0.1)
+
         key = getKeyStroke()
         if key == "UP":
             if not cursor - 1 < 1:
@@ -220,40 +198,46 @@ def renderFolders(path, avail, patchPage):
             if itempath in copyQue:
                 selected = True
 
+            # Render the AIF data from cursor landed item
             if "aif" in i and counter == currentCursor:
                 try:
                     synType, FX, LFO = analyzeAIF(fb.structCurrentPath() + "/" + i)
                 except:
+                    # AIF meta data not retrievable
                     synType, FX, LFO = "N/A", "N/A", "N/A"
                     pass
+                # Render Patch Type
                 draw.text((90, 16), str(synType), fill='white', font=getFont())
                 draw.text((90, 35), str(FX), fill='white', font=getFont())
                 draw.text((90, 53), str(LFO), fill='white', font=getFont())
 
+            # Remove extension for display and dash out long file names
             i = i.replace(".aif", "")
             if len(i) > 10:
                 i = i[:10] + ".."
+            # Iterate through selected queue and invert the color
             if selected:
                 draw.rectangle(((9, counter * 10), (84, counter * 10 + 10)), 'white')
                 draw.text(displayLine(counter, 10), str(i), fill='black', font=getFont())
             else:
-                # draw.rectangle(((5, counter * 10), (110, 10)), 'black')
                 draw.text(displayLine(counter, 10), str(i), fill='white', font=getFont())
-
+            # Render next item from current Directory
             counter += 1
+
+        # Render cursor
         draw.text(displayLine(currentCursor, 0), ">", fill='white', font=getFont())
         # Render Scroll Bar
         scrollBarXLocation = 86
         # List Shorter than screen size, fill the whole scroll bar
         if len(fb.getDirList()) <= 5:
             draw.line((scrollBarXLocation, 10, scrollBarXLocation, 64), fill="white", width=1)
-        # Render Scroll Bar
         else:
             scrollBarLength = int(getScrollBarSize(fb.getDirList()))
             offset = getOffset(fb.getDirList(), actualFilePointer - 1, scrollBarLength)
             draw.line((scrollBarXLocation, 10 + offset, scrollBarXLocation, 10 + scrollBarLength + offset),
                       fill="white", width=1)
 
+        # Update Image to the display
         displayImage(image)
 
         key = getKeyStroke()
@@ -299,12 +283,9 @@ def renderFolders(path, avail, patchPage):
                 actualFilePointer = 1
 
         if key == "CENTER":
-
             # Start Multi-select
-
             currentCopyQueue = fb.getCopyQueue()
-
-            print(fb.structCurrentPath() + fb.getDirList()[actualFilePointer - 1])
+            # print(fb.structCurrentPath() + fb.getDirList()[actualFilePointer - 1])
             if fb.structCurrentPath() + fb.getDirList()[actualFilePointer - 1] not in currentCopyQueue:
                 fb.addToCopyQueue(actualFilePointer)
             else:
@@ -315,16 +296,9 @@ def renderFolders(path, avail, patchPage):
             else:
                 folderSelected = False
 
-            print(fb.getCopyQueue(), folderSelected)
+            # print(fb.getCopyQueue(), folderSelected)
 
         if key == "A":
             print("")
         if key == "B":
             print(RenderOptionsMenu(["Upload", "Rename", "Delete"]))
-
-# temp.addToCopyQueue(1)
-# temp.addToCopyQueue(2)
-# temp.addToCopyQueue(3)
-# temp.removeFromCopyQueue(1)
-# temp.removeFromCopyQueue(2)
-# print(temp.getCopyQueue())
