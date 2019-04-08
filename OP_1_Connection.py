@@ -69,29 +69,22 @@ def getMountPath():
 
 
 def start_OP_1_Connection():
-    # Render Please Connect Screen
     wait_for_connection()
     mountpath = getmountpath()
     config["USB_Mount_Path"] = mountpath
-
-    for i, disk in enumerate(disk_partitions()):
-        if disk.device == mountpath:
-            mountPoint = disk.mountpoint
-            config["OP_1_Mounted_Dir"] = mountPoint
-            print(config["OP_1_Mounted_Dir"])
-            return mountPoint
+    return mountpath
 
 
 def unmount_OP_1():
     unmountdevice(config["USB_Mount_Path"])
 
 
-def list_files(startpath):
+def checkOccupiedSlots(startPath):
     patchType = ""
     sampleEngine = []
     synthEngine = []
     drum = []
-    for root, dirs, files in os.walk(startpath):
+    for root, dirs, files in os.walk(startPath):
         for f in files:
             currentFilePath = str(root) + "/" + f
             if f.endswith('.aif') and not f.startswith("."):
@@ -110,15 +103,7 @@ def list_files(startpath):
     return [sampleEngine, synthEngine, drum]
 
 
-def get_OP1_Storage_Status():
-    return currentStorageStatus
-
-
 def update_Current_Storage_Status():
-    sampler, synth, drum = list_files(savePaths["OP_1_Synth"])
-    currentStorageStatus["sampler"] = len(sampler)
-    currentStorageStatus["synth"] = len(synth)
-    sampler, synth, drum = list_files(savePaths["OP_1_Drum"])
-    currentStorageStatus["drum"] = len(drum)
-
-
+    sampler, synth, none = checkOccupiedSlots(savePaths["OP_1_Synth"])
+    none, none, drum = checkOccupiedSlots(savePaths["OP_1_Drum"])
+    return len(sampler), len(synth), len(drum)

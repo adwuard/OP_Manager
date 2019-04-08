@@ -1,32 +1,24 @@
-# import time
-# import cv2
-# import numpy as np
+import os
 from PIL import Image, ImageDraw
 import Menu_Page_Router
-from FileBrowser import renderFolders
 from GPIO_Init import getKeyStroke, displayImage, getFont
-from OP_1_Connection import start_OP_1_Connection, is_connected, currentStorageStatus
-from config import config, savePaths
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
 
+workDir = os.path.dirname(os.path.realpath(__file__))
 
-def displayLine(line, indent):
-    return indent, line * 10
 
 def start():
-    image = Image.open("Assets/Img/OP_1Connect_64.png").convert("1")
+    image = Image.open(workDir + "/Assets/Img/OP_1Connect_64.png").convert("1")
     displayImage(image)
     # start_OP_1_Connection()
     connected = Image.new('1', (128, 64))
-    draw2 = ImageDraw.Draw(connected)
-    draw2.text(displayLine(3, 25), "Connected !", font=getFont(), fill='white')
+    draw = ImageDraw.Draw(connected)
+    draw.text((30, 25), "Connected !", font=getFont(), fill='white')
     displayImage(connected)
-    # time.sleep(3)
     currentCursor = 1
 
-    # Get OP1 Connection
     # Initialize Menu System
     pg = Menu_Page_Router.PageRouter()
     # Start First Page
@@ -61,16 +53,28 @@ def start():
             currentCursor = 1
 
         elif key == "B":
-            pg.renderPage(1, currentCursor)
-            currentCursor = 1
-
+            # pg.renderPage(1, currentCursor)
+            # currentCursor = 1
+            pass
         elif key == "A":
-            currentCursor = 1
-            pg.renderPage(-1, 1)
+            # currentCursor = 1
+            # pg.renderPage(-1, 1)
+            pass
 
         else:
             raise ("Log: Key ", key, "Not recognized")
 
+
 if __name__ == "__main__":
+    # from multiprocessing import Process
+    # server = Process(target=app.run)
+    # server.start()
     start()
+    # server.terminate()
+    # server.join()
+
+    # while True:
+    #     print("\nStarting " + filename)
+    #     p = Popen("python " + filename, shell=True)
+        # p.wait()
 

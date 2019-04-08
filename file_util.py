@@ -1,5 +1,4 @@
 import json
-
 from config import config
 import os
 import shutil
@@ -7,6 +6,8 @@ import ntpath
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
+
+workDir = os.path.dirname(os.path.realpath(__file__))
 
 
 # =================== Helper Tools===================
@@ -76,11 +77,14 @@ def analyzeAIF(pathTOAIF):
     # print(data)
     return data.get("type").capitalize(), data.get("fx_type").capitalize(), data.get("lfo_type").capitalize()
 
+
 # Removes A File
 # os.remove("")
 
 # removes all files including the folder itself
-# shutil.rmtree("/Users/edwardlai/Documents/Git Ripos/OP1_File_Organizer/Test/temp")
+
+def removeTree(path):
+    shutil.rmtree(path)
 
 # Remove files inside a dir
 # d='/home/me/test'

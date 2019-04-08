@@ -1,11 +1,12 @@
 import os
 import subprocess
 import time
-from PIL import ImageFont, Image, ImageDraw
+from PIL import Image, ImageDraw
 from FileBrowser import renderFolders
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont
-from OP_1_Connection import update_Current_Storage_Status, get_OP1_Storage_Status, currentStorageStatus, getMountPath, \
-    unmount_OP_1
+from OP_1_Connection import update_Current_Storage_Status, currentStorageStatus, getMountPath, unmount_OP_1, \
+    checkOccupiedSlots
+from TapesBackup import TapeBackup
 from menu_structure import MainPage
 from config import config, savePaths
 from run import start
@@ -13,26 +14,12 @@ from run import start
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
 
-
-# This is for the local debugging, preview screen in Computer
-# def rescale_frame(frame, percent=75):
-#     width = int(frame.shape[1] * percent / 100)
-#     height = int(frame.shape[0] * percent / 100)
-#     dim = (width, height)
-#     return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
-
-def displayLine(line, indent):
-    return indent, line * 10
+workDir = os.path.dirname(os.path.realpath(__file__))
 
 
 class PageRouter:
     pageQue = [MainPage]
     currentDist = []
-
-    fullPage = []
-    currentPage = []
-    realPointer = 1
-    currentSelector = 1
 
     def __init__(self):
         self.processState = False
@@ -47,12 +34,9 @@ class PageRouter:
         image = Image.new('1', frameSize)
         draw = ImageDraw.Draw(image)
         currentDist = self.pageQue[-1]
-        # arr = currentDist[0]
-
         # Stay on same page (Up Down)
         if action == 0:
             self.renderStandardMenu(draw, currentDist, cur)
-
         # Action Events (RIGHT)
         if action == 1:
             if type(currentDist[cur][1]) is str:
@@ -62,64 +46,68 @@ class PageRouter:
                 self.pageQue.append(currentDist[cur][1])
             self.renderPage(0, 1)
             return
-
         # Previous Page (Left)
         if action == -1:
             if len(self.pageQue) > 1:
                 self.pageQue = self.pageQue[:-1]
             self.renderPage(0, 1)
             return
-
         displayImage(image)
-
-        # npImage = np.asarray(image)
-        # frameBGR = cv2.cvtColor(npImage, cv2.COLOR_RGB2BGR)
-        # newFrame = rescale_frame(frameBGR, percent=300)
-        # cv2.imshow('Test', newFrame)
 
     def actionRouter(self, event):
         # =============Projects Actions ===========
         if event == "act_Backup_Project_From_OP_1":
             image = Image.new('1', (128, 64))
-            image.paste(Image.open("Assets/Img/BackupProject.png").convert("1"))
+            image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
             displayImage(image)
             time.sleep(0.1)
-            # try:
-            #     tape = TapeBackup()
-            #     tape.copyToLocal()
-            # except:
-            #     print("File Transfer Error")
-            time.sleep(8)
+            try:
+                tape = TapeBackup()
+                tape.copyToLocal()
+            except:
+                print("File Transfer Error")
+
             image = Image.new('1', (128, 64))
-            image.paste(Image.open("Assets/Img/Done.png").convert("1"))
+            image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
             displayImage(image)
             time.sleep(0.1)
             getAnyKeyEvent()
             self.renderPage(-1, 1)
 
         if event == "act_Load_Project_From_Local":
-            renderFolders(savePaths["Local_Projects"], -9999, 0)
+            renderFolders(savePaths["Local_Projects"], "Upload")
             self.renderPage(-1, 1)
 
         # ===========Patches Actions===========
         if event == "OP1_Synth_Patches":
-            renderFolders(getMountPath() + "/synth", currentStorageStatus["synth"], 1)
+            option = "RETURN"
+            # while option == "RETURN":
+            renderFolders(savePaths["OP_1_Synth"], "Backup")
             self.renderPage(-1, 1)
 
         if event == "OP1_Drum_Patches":
-            renderFolders(getMountPath() + "/drum", currentStorageStatus["drum"], 1)
+            renderFolders(savePaths["OP_1_Drum"], "Backup")
             self.renderPage(-1, 1)
 
         if event == "UploadSynthPatches":
-            renderFolders(savePaths["Local_Synth"], currentStorageStatus["synth"], 1)
+            # option = "RETURN"
+            # while option == "RETURN":
+            renderFolders(savePaths["Local_Synth"], "Upload")
+            # if option == "Upload":
+            #     print("Upload")
+            # if option == "Rename":
+            #     print("Rename")
+            # if option == "Delete":
+            #     print("Delete")
+
             self.renderPage(-1, 1)
 
         if event == "UploadDrumPatches":
-            renderFolders(savePaths["Local_Drum"], currentStorageStatus["drum"], 1)
+            renderFolders(savePaths["Local_Drum"], "Upload")
             self.renderPage(-1, 1)
 
         if event == "act_5_Backup_All_Patches":
-            pass
+            self.renderPage(-1, 1)
 
         # ===========Eject Actions===========
         if event == "act_ESC_Eject_OP_1":
@@ -136,32 +124,46 @@ class PageRouter:
 
         if event == "checkStorage":
             image = Image.new('1', (128, 64))
-            image.paste(Image.open("Assets/Img/Storage_64.png").convert("1"))
+            image.paste(Image.open(workDir + "/Assets/Img/Storage_64.png").convert("1"))
             draw = ImageDraw.Draw(image)
-            update_Current_Storage_Status()
-            statusDist = get_OP1_Storage_Status()
-            remainSynth = config["Max_Synth_Synthesis_patches"] - statusDist["synth"]
-            remainSampler = config["Max_Synth_Sampler_patches"] - statusDist["sampler"]
-            remainDrum = config["Max_Drum_Patches"] - statusDist["drum"]
+            sampler, synth, drum = update_Current_Storage_Status()
             Disk = subprocess.check_output("df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'", shell=True)
-            draw.text((50, 13), Disk, font=getFont(), fill="white")
-            draw.text((28, 48), str(remainSampler), font=getFont(), fill="white")
-            draw.text((70, 48), str(remainSynth), font=getFont(), fill="white")
-            draw.text((112, 48), str(remainDrum), font=getFont(), fill="white")
+            draw.text((50, 13), Disk, font=getFont(), fill="white")  # Disk Storage Render
+            draw.text((28, 48), str(config["Max_Synth_Sampler_patches"] - sampler), font=getFont(), fill="white")
+            draw.text((70, 48), str(config["Max_Synth_Synthesis_patches"] - synth), font=getFont(), fill="white")
+            draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
             displayImage(image)
-            getAnyKeyEvent()
+            getAnyKeyEvent()  # Press any key to proceed
             self.renderPage(-1, 1)
 
-    def renderStandardMenu(self, draw, currentDist, cursor):
-        font = ImageFont.truetype("Fonts/Georgia Bold.ttf", 10)
+    def renderStandardMenu(self, draw, currentDist=None, cursor=1):
+        font = getFont()
         draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
-        iterCount = 0
-        for i in currentDist:
-            if iterCount == 0:
-                draw.rectangle([(0, 0), (128, 10)], 'white')
-                draw.text(displayLine(iterCount, 2), str(i[0]), fill='black', font=font)
-            else:
-                draw.text(displayLine(iterCount, 10), str(i[0]), fill='white', font=font)
-            iterCount += 1
-        # if cursor != -1:
-        draw.text(displayLine(cursor, 2), ">", fill='white', font=font)
+        draw.rectangle([(0, 0), (128, 10)], 'white')
+        draw.text((2, 0), str(currentDist[0][0]), fill='black', font=font)
+        for i in range(1, len(currentDist)):
+            draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=font)
+        draw.text((2, cursor * 10), ">", fill='white', font=font)
+
+    def renderRename(self, file=""):
+        """
+        Given a file path, renders for rename, with confirmation for rename or cancel,
+        :param file:
+        :return:
+        """
+        pass
+
+    # Useful in "Are you sure to delete.", "Are you sure to rename"
+    def renderConfirmation(self, message=""):
+        """
+            Renders The Message and ask for yes or no
+        :return: Boolean
+        """
+        pass
+
+    def renderErrorMessagePage(self, errorMessage=""):
+        """
+        Renders any given massage on to the screen, and wait for any key input to continue
+        :param errorMessage: String message you want to display on the screen
+        :return: N/A
+        """

@@ -4,11 +4,14 @@ import time
 from os import listdir
 from PIL import Image, ImageDraw
 from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay
+from OP_1_Connection import currentStorageStatus
 from config import config, savePaths
 from file_util import getDirFileList, analyzeAIF
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
+
+workDir = os.path.dirname(os.path.realpath(__file__))
 
 
 class fileBrowser:
@@ -32,20 +35,15 @@ class fileBrowser:
         return self.currentDirLst
 
     def addToCopyQueue(self, item):
-        self.copyQueue.append(str(self.structCurrentPath()) + str(self.currentDirLst[item - 1]))
+        # self.copyQueue.append(str(self.structCurrentPath()) + str(self.currentDirLst[item - 1]))
+        self.copyQueue.append(str(self.structCurrentPath()) + str(item))
 
     def removeFromCopyQueue(self, item):
-        removeTarget = self.currentDirLst[item - 1]
-        idx = 0
-        for i in self.copyQueue:
-            fileName = i.split("/")
-            fileName = fileName[-1]
-            print("remove file name", fileName)
-            if fileName in removeTarget:
-                print(fileName)
-                print(removeTarget)
-                self.copyQueue.pop(idx)
-            idx += 1
+        self.copyQueue.remove(str(self.structCurrentPath() + str(item)))
+
+    def clearCopyQueue(self):
+        self.copyQueue = []
+
 
     def prevPage(self):
         if len(self.histQueue) > 1:
@@ -67,7 +65,7 @@ class fileBrowser:
         return self.currentDirLst
 
 
-# =======================For UI Rendering=======================
+# =======================For UI Rendering and page scrolling helper functions=======================
 def shiftArray(array, shortArray, shift):
     """
     Given full array of the file dir, and shotArray is subset of the full array.
@@ -110,13 +108,14 @@ def shiftArray(array, shortArray, shift):
     return shortArray
 
 
-def displayLine(line, indent):
-    return indent, line * 10
-
-
 def scale(val, src, dst):
+    """
+    :param val: Given input value for scaling
+    :param src: Initial input value's Min Max Range pass in as tuple of two (Min, Max)
+    :param dst: Target output value's Min Max Range pass in as tuple of two (Min, Max)
+    :return: Return mapped scaling from target's Min Max range
+    """
     return (float(val - src[0]) / float(src[1] - src[0])) * (dst[1] - dst[0]) + dst[0]
-    # return int(((val - src[0]) / (src[1] - src[0])) * (dst[1] - dst[0]) + dst[0])
 
 
 def getOffset(lstFull, currentPointer, scrollBarSize):
@@ -132,20 +131,24 @@ def getScrollBarSize(lst):
         return scrollFullSize * scale(lstSize, (5, 50), (0.5, 0.05))
 
 
-# RenderOptionsMenu(["Upload", "Rename", "Delete"]_
 def RenderOptionsMenu(lst):
+    """
+    Renders items in given list, and return the string whatever user chooses
+    :param lst: list of strings to render  Example: ["Upload", "Rename", "Delete"]
+    :return: String the user choose
+    """
     cursor = 1
     while True:
         image = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(image)
 
         draw.rectangle([(0, 0), (128, 10)], 'white')
-        draw.text(displayLine(0, 2), "Actions", fill='black', font=getFont())
+        draw.text((0, 2), "Actions", fill='black', font=getFont())
 
         for i in range(0, len(lst)):
-            draw.text(displayLine(i, 10), str(lst[i]), fill='white', font=getFont())
+            draw.text((10, (i + 1) * 10), str(lst[i]), fill='white', font=getFont())
 
-        draw.text(displayLine(cursor, 2), ">", fill='white', font=getFont())
+        draw.text((2, cursor * 10), ">", fill='white', font=getFont())
         displayImage(image)
         time.sleep(0.1)
 
@@ -162,42 +165,56 @@ def RenderOptionsMenu(lst):
             return lst[cursor - 1]
 
 
-def renderFolders(path, avail, patchPage):
-    folderSelected = False
+def renderFolders(path, upload_download):
     actualFilePointer = 1
     currentCursor = 1
     shortArray = []
-    offset = 0
+    selectedDisplay = []
 
     fb = fileBrowser(path)
-    scrollBarLength = getScrollBarSize(fb.getDirList())
+
+    sampler = currentStorageStatus["sampler"]
+    synth = currentStorageStatus["synth"]
+    drum = currentStorageStatus["drum"]
+
+    drum, synth, sampler = 42, 100, 42
+
+    if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
+        # Display synth and Sample Available
+        availableSlots = synth + sampler
+    else:
+        availableSlots = drum
 
     # RenderFolders
     while True:
         image = Image.new('1', (128, 64))
 
-        if patchPage == 1:
-            image.paste(Image.open("Assets/Img/FileBrowser.png").convert("1"))
-            draw = ImageDraw.Draw(image)
-        else:
-            draw = ImageDraw.Draw(image)
-            draw.rectangle([(0, 0), (128, 10)], 'white')
+        image.paste(Image.open(workDir + "/Assets/Img/FileBrowser.png").convert("1"))
+        draw = ImageDraw.Draw(image)
 
-        # print(fb.structCurrentPath())
-        draw.text(displayLine(0, 2), os.path.basename(fb.structCurrentPath()[:-1]), fill='black', font=getFont())
-        if patchPage:
-            draw.text((108, -2), str(avail), fill='white', font=getFont())
+        draw.text((2, -1), os.path.basename(fb.structCurrentPath()[:-1]), fill='black', font=getFont())
+
+        if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
+            # Display synth and Sample Available
+            draw.text((108, -2), str(availableSlots), fill='white', font=getFont())
+        else:
+            # Display available drums
+            draw.text((108, -2), str(availableSlots), fill='white', font=getFont())
+
         shortArray = shiftArray(fb.getDirList(), shortArray, 0)
         clearDisplay()
+
+        # Empty Folder
+        if not shortArray:
+            draw.text((30, 40), "[Empty]", fill='white', font=getFont())
+            displayImage(image)
+            time.sleep(2)
+            return
+
         counter = 1
         for i in shortArray:
-            itempath = fb.structCurrentPath() + i
-            copyQue = fb.getCopyQueue()
-            selected = False
-
-            if itempath in copyQue:
-                selected = True
-
+            # Check if current item is selected
+            selected = True if i in selectedDisplay else False
             # Render the AIF data from cursor landed item
             if "aif" in i and counter == currentCursor:
                 try:
@@ -218,14 +235,15 @@ def renderFolders(path, avail, patchPage):
             # Iterate through selected queue and invert the color
             if selected:
                 draw.rectangle(((9, counter * 10), (84, counter * 10 + 10)), 'white')
-                draw.text(displayLine(counter, 10), str(i), fill='black', font=getFont())
+                draw.text((10, counter * 10), str(i), fill='black', font=getFont())
             else:
-                draw.text(displayLine(counter, 10), str(i), fill='white', font=getFont())
+                draw.text((10, counter * 10), str(i), fill='white', font=getFont())
             # Render next item from current Directory
             counter += 1
 
         # Render cursor
-        draw.text(displayLine(currentCursor, 0), ">", fill='white', font=getFont())
+        draw.text((0, currentCursor * 10), ">", fill='white', font=getFont())
+
         # Render Scroll Bar
         scrollBarXLocation = 86
         # List Shorter than screen size, fill the whole scroll bar
@@ -263,42 +281,93 @@ def renderFolders(path, avail, patchPage):
 
         if key == "LEFT":
             if len(fb.histQueue) == 1:
+                # No more Page to return to, exit the page
                 return
             else:
                 currentCursor = 1
                 actualFilePointer = 1
-                offset = 0
+                availableSlots += len(fb.getCopyQueue())
+                fb.clearCopyQueue()
                 fb.prevPage()
-                scrollBarLength = getScrollBarSize(fb.getDirList())
 
         if key == "RIGHT":
-            if not folderSelected and "aif" not in fb.getDirList():
+            if len(fb.getCopyQueue()) == 0 and "aif" not in fb.getDirList()[actualFilePointer - 1]:
+                fb.selectNewPath(fb.getDirList()[actualFilePointer - 1])
                 currentCursor = 1
-                try:
-                    fb.selectNewPath(fb.getDirList()[actualFilePointer - 1])
-                except:
-                    RenderOptionsMenu(["Upload", "Rename", "Delete"])
-                scrollBarLength = getScrollBarSize(fb.getDirList())
-                offset = 0
                 actualFilePointer = 1
 
         if key == "CENTER":
-            # Start Multi-select
-            currentCopyQueue = fb.getCopyQueue()
-            # print(fb.structCurrentPath() + fb.getDirList()[actualFilePointer - 1])
-            if fb.structCurrentPath() + fb.getDirList()[actualFilePointer - 1] not in currentCopyQueue:
-                fb.addToCopyQueue(actualFilePointer)
+            # Start Multi-select. (Select and deselect, and add the selected ones to copy queue)
+            currentFile = fb.getDirList()[actualFilePointer - 1]
+            selectedFolderPath = fb.structCurrentPath() + currentFile
+            # Add to copy
+            if currentFile not in selectedDisplay:
+                # Decrement Available Patches
+                if os.path.isdir(selectedFolderPath):
+                    selectedDisplay.append(currentFile)
+                    for i in getDirFileList(selectedFolderPath):
+                        fb.addToCopyQueue(i)
+                        availableSlots -= 1
+                else:
+                    fb.addToCopyQueue(currentFile)
+                    selectedDisplay.append(currentFile)
+                    availableSlots -= 1
             else:
-                fb.removeFromCopyQueue(actualFilePointer)
-
-            if len(fb.getCopyQueue()) >= 1:
-                folderSelected = True
-            else:
-                folderSelected = False
-
-            # print(fb.getCopyQueue(), folderSelected)
+                # Remove form copy
+                if os.path.isdir(selectedFolderPath):
+                    selectedDisplay.remove(currentFile)
+                    for i in getDirFileList(selectedFolderPath):
+                        fb.removeFromCopyQueue(i)
+                        availableSlots += 1
+                else:
+                    fb.removeFromCopyQueue(currentFile)
+                    selectedDisplay.remove(currentFile)
+                    availableSlots += 1
 
         if key == "A":
             print("")
+            # return
         if key == "B":
-            print(RenderOptionsMenu(["Upload", "Rename", "Delete"]))
+            ##This part need redo
+            currentFile = fb.getDirList()[actualFilePointer - 1]
+            selectedFolderPath = fb.structCurrentPath() + currentFile
+            rtn = ""
+            if len(fb.getCopyQueue()) == 0 or len(selectedDisplay) == 1:
+                if os.path.isdir(selectedFolderPath):
+                    for i in getDirFileList(selectedFolderPath):
+                        fb.addToCopyQueue(i)
+                    fileCount = len(fb.getCopyQueue())
+                    # availableSlots += len(fb.getCopyQueue())
+                    rtn = RenderOptionsMenu([upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
+                else:
+                    fb.addToCopyQueue(currentFile)
+                    # availableSlots += 1
+                    rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
+            else:
+                fileCount = len(fb.getCopyQueue())
+                rtn = RenderOptionsMenu([upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
+                if rtn == "RETURN":
+                    availableSlots += fileCount
+
+            if "Upload" in rtn:
+                # List allowed
+                print("Upload", fb.getCopyQueue())
+                pass
+            elif "Delete" in rtn:
+                # List allowed
+                print("Delete", fb.getCopyQueue())
+                pass
+
+            elif "Rename" in rtn:
+                # Only one item is allowed
+                print("Rename", fb.getCopyQueue())
+                pass
+
+            # if rtn == "RETURN":
+            currentCursor = 1
+            actualFilePointer = 1
+            fb.clearCopyQueue()
+            selectedDisplay = []
+
+            # Update Remain Available Patches
+

@@ -10,12 +10,12 @@ Utilities = [
     ["Remove All User Data", "Remove all Data"]
 ]
 
-PresetPage = [
-    ["Manage Presets", -1],
-    ["Freeze State", "act_Freeze_State"],
-    ["Upload From Local", "act_Upload_Preset_From_Local"],
-    ["Del All User Data", "act_DANG_Delete_ALL_From_OP_1"]
-]
+# PresetPage = [
+#     ["Manage Presets", -1],
+#     ["Freeze State", "act_Freeze_State"],
+#     ["Upload From Local", "act_Upload_Preset_From_Local"],
+#     ["Del All User Data", "act_DANG_Delete_ALL_From_OP_1"]
+# ]
 
 OP_1_Patches_Folder = [
     ["OP-1 Patches", -1],
