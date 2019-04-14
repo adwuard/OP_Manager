@@ -10,7 +10,7 @@ I am currently developing a compact hardware tool that can easily swap and backu
 
 ## Support this project
 If you like my project, please support to keep this project going. Thank You!  
-[Buy me a cup of coffee ☕](paypal.me/hsuanhanlai)
+[Buy me a cup of coffee ☕](http://tinyurl.com/y4jezlod)
 
 ## Where can I get my unit?
 This project is still under developing. Eventually I wish to bring this project into production.  
