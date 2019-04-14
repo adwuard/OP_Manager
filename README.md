@@ -6,12 +6,25 @@ I am currently developing a compact hardware tool that can easily swap and backu
 - Quickly Upload/Backup Projects(tapes and album) form OP-1
 - Load/Backup Snapshots patches
 - Load Specfic Patches or Packs(Folder that contains multiple patches)
-- Swap all patches: Since op-1 only accept limit amount of patches, user can preload different mega packs onto the raspberry pi, the loader will DELETE ALL the (drum, sample, and synth)patches on the OP-1 and load an entire different patch library
 - Monitor remain available patch slots on the OP-1
 
+## Support this project
+If you like my project, please support to keep this project going. Thank You!  
+[Buy me a cup of coffee ☕](paypal.me/hsuanhanlai)
+
+## Where can I get my unit?
+This project is still under developing. Eventually I wish to bring this project into production.  
+Fill this form if you are interested buying one [Buy Request Form](https://docs.google.com/forms/d/1X8iLhBRd5raKvjgKeI_BbXLz58yhPBtnHt0vC7C34Sw/edit)
+
+
+
+
 ## Hardware (Future Implement)
-- Eventually can be deployed on to raspberry pi zero for maximum portability
+- Raspberry Pi Zero W + SD card (16GB reccomended)
 - Uses 128x64 OLED Panel, a D pad, and two buttons for controll
 - Uses OTG USB to Communicate with OP-1  
-To-Do: Display Driver, OTG OP-1 Device Searcher, UI and menu design.
 
+## Stuff I Want to add
+- Midi host, CV and Trigger hardware output.
+- Battery Powered
+- Casing
