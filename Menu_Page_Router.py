@@ -2,11 +2,11 @@ import os
 import subprocess
 import time
 from PIL import Image, ImageDraw
-from FileBrowser import renderFolders
+from FileBrowser import renderFolders, RenderOptionsMenu
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont
-from OP_1_Connection import update_Current_Storage_Status, currentStorageStatus, getMountPath, unmount_OP_1, \
-    checkOccupiedSlots
+from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection
 from TapesBackup import TapeBackup
+from file_util import getDirFileList
 from menu_structure import MainPage
 from config import config, savePaths
 from run import start
@@ -57,53 +57,54 @@ class PageRouter:
     def actionRouter(self, event):
         # =============Projects Actions ===========
         if event == "act_Backup_Project_From_OP_1":
-            image = Image.new('1', (128, 64))
-            image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
-            displayImage(image)
-            time.sleep(0.1)
-            try:
-                tape = TapeBackup()
-                tape.copyToLocal()
-            except:
-                print("File Transfer Error")
-
-            image = Image.new('1', (128, 64))
-            image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
-            displayImage(image)
-            time.sleep(0.1)
-            getAnyKeyEvent()
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                image = Image.new('1', (128, 64))
+                image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
+                displayImage(image)
+                time.sleep(0.1)
+                try:
+                    tape = TapeBackup()
+                    tape.copyToLocal()
+                    image = Image.new('1', (128, 64))
+                    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
+                    displayImage(image)
+                    time.sleep(0.1)
+                    getAnyKeyEvent()
+                except:
+                    print("File Transfer Error")
+                    self.renderErrorMessagePage("File Transfer Error")
             self.renderPage(-1, 1)
 
         if event == "act_Load_Project_From_Local":
-            renderFolders(savePaths["Local_Projects"], "Upload")
+            rtn = "RETURN"
+            RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
+            while rtn == "RETURN":
+                rtn = RenderOptionsMenu(["Upload", "Rename", "Delete"])
+                temp = RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
+                if temp == "RETURN":
+                    break
             self.renderPage(-1, 1)
+
+
+
 
         # ===========Patches Actions===========
         if event == "OP1_Synth_Patches":
-            option = "RETURN"
-            # while option == "RETURN":
-            renderFolders(savePaths["OP_1_Synth"], "Backup")
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                renderFolders(config["OP_1_Mounted_Dir"] + "/synth", "Backup", savePaths["Local_Synth"])
             self.renderPage(-1, 1)
 
         if event == "OP1_Drum_Patches":
-            renderFolders(savePaths["OP_1_Drum"], "Backup")
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                renderFolders(config["OP_1_Mounted_Dir"] + "/drum", "Backup", savePaths["Local_Drum"])
             self.renderPage(-1, 1)
 
         if event == "UploadSynthPatches":
-            # option = "RETURN"
-            # while option == "RETURN":
-            renderFolders(savePaths["Local_Synth"], "Upload")
-            # if option == "Upload":
-            #     print("Upload")
-            # if option == "Rename":
-            #     print("Rename")
-            # if option == "Delete":
-            #     print("Delete")
-
+            renderFolders(savePaths["Local_Synth"], "Upload", config["OP_1_Mounted_Dir"] + "/synth")
             self.renderPage(-1, 1)
 
         if event == "UploadDrumPatches":
-            renderFolders(savePaths["Local_Drum"], "Upload")
+            renderFolders(savePaths["Local_Drum"], "Upload", config["OP_1_Mounted_Dir"] + "/drum")
             self.renderPage(-1, 1)
 
         if event == "act_5_Backup_All_Patches":
@@ -111,29 +112,26 @@ class PageRouter:
 
         # ===========Eject Actions===========
         if event == "act_ESC_Eject_OP_1":
-            # unmount_OP_1()
-            cmd = "sudo umount " + config["OP_1_Mounted_Dir"]
             try:
-                os.system(cmd)
+                if unmount_OP_1():
+                    print("Ejected")
             except:
-                pass
-            print("Ejected")
-            time.sleep(5)
-            start()
-            # pass
+                print("Error")
+            self.renderPage(-1, 1)
 
         if event == "checkStorage":
-            image = Image.new('1', (128, 64))
-            image.paste(Image.open(workDir + "/Assets/Img/Storage_64.png").convert("1"))
-            draw = ImageDraw.Draw(image)
-            sampler, synth, drum = update_Current_Storage_Status()
-            Disk = subprocess.check_output("df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'", shell=True)
-            draw.text((50, 13), Disk, font=getFont(), fill="white")  # Disk Storage Render
-            draw.text((28, 48), str(config["Max_Synth_Sampler_patches"] - sampler), font=getFont(), fill="white")
-            draw.text((70, 48), str(config["Max_Synth_Synthesis_patches"] - synth), font=getFont(), fill="white")
-            draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
-            displayImage(image)
-            getAnyKeyEvent()  # Press any key to proceed
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                image = Image.new('1', (128, 64))
+                image.paste(Image.open(workDir + "/Assets/Img/Storage_64.png").convert("1"))
+                draw = ImageDraw.Draw(image)
+                sampler, synth, drum = update_Current_Storage_Status()
+                Disk = subprocess.check_output("df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'", shell=True)
+                draw.text((50, 13), Disk, font=getFont(), fill="white")  # Disk Storage Render
+                draw.text((28, 48), str(config["Max_Synth_Sampler_patches"] - sampler), font=getFont(), fill="white")
+                draw.text((70, 48), str(config["Max_Synth_Synthesis_patches"] - synth), font=getFont(), fill="white")
+                draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
+                displayImage(image)
+                getAnyKeyEvent()  # Press any key to proceed
             self.renderPage(-1, 1)
 
     def renderStandardMenu(self, draw, currentDist=None, cursor=1):
@@ -151,12 +149,13 @@ class PageRouter:
         :param file:
         :return:
         """
+
         pass
 
     # Useful in "Are you sure to delete.", "Are you sure to rename"
     def renderConfirmation(self, message=""):
         """
-            Renders The Message and ask for yes or no
+        Renders The Message and ask for yes or no
         :return: Boolean
         """
         pass

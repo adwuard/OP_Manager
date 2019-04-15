@@ -49,7 +49,7 @@ def getFont():
 
 
 def getSmallFont():
-    return ImageFont.truetype(workDir + "/Fonts/Georgia Bold.ttf", 8)
+    return ImageFont.truetype(workDir + "/Fonts/Georgia Bold.ttf", 9)
 
 
 def clearDisplay():

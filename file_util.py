@@ -1,4 +1,10 @@
 import json
+from os.path import abspath, join, pardir, basename, dirname
+from time import sleep
+
+from PIL import Image, ImageDraw
+
+from GPIO_Init import displayImage, getAnyKeyEvent, getFont
 from config import config
 import os
 import shutil
@@ -52,7 +58,7 @@ def rename(src, dst):
 
 
 def get_visible_folders(d):
-    return list(filter(lambda x: os.path.isdir(os.path.join(d, x)), getDirFileList(d)))
+    return list(filter(lambda x: os.path.isdir(os.path.join(d, x)), os.listdir(d)))
 
 
 def getDirFileList(d):
@@ -86,8 +92,57 @@ def analyzeAIF(pathTOAIF):
 def removeTree(path):
     shutil.rmtree(path)
 
+
 # Remove files inside a dir
 # d='/home/me/test'
 # filesToRemove = [os.path.join(d,f) for f in os.listdir(d)]
 # for f in filesToRemove:
 #     os.remove(f)
+
+# fileTransferHelper(["..../OP1_File_Organizer/NotUsed/..../patch.aif"], "/..../synth")
+def fileTransferHelper(srclist, dest):
+    for i in srclist:
+        srcParentFolderName = abspath(join(i, pardir)).split("/")[-1:][0]
+        srcBaseName = basename(i)
+        distParentFolderName = dest + "/" + srcParentFolderName
+        forcedir(distParentFolderName)
+
+        image = Image.new('1', (128, 64))
+        if config["LocalBackupPath"] in srclist[0]:
+            # Local to OP1
+            image.paste(Image.open(workDir + "/Assets/Img/UploadPatches.png").convert("1"))
+        else:
+            # OP1 to Local
+            image.paste(Image.open(workDir + "/Assets/Img/DownloadPatches.png").convert("1"))
+        draw = ImageDraw.Draw(image)
+        draw.text((20, 63), srcBaseName, font=getFont(), fill="white")
+        displayImage(image)
+        print(i, distParentFolderName + "/" + srcBaseName)
+        shutil.copy2(i, distParentFolderName + "/" + srcBaseName)
+
+    image = Image.new('1', (128, 64))
+    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
+    displayImage(image)
+    getAnyKeyEvent()  # Press any key to proceed
+    return
+
+
+def deleteHelper(srclist):
+    image = Image.new('1', (128, 64))
+    image.paste(Image.open(workDir + "/Assets/Img/Deleting.png").convert("1"))
+    displayImage(image)
+    sleep(0.5)
+
+    for i in srclist:
+        folder = dirname(i)
+        if os.path.exists(i):
+            os.remove(i)
+
+        if len(os.listdir(folder)) == 0:
+            os.rmdir(folder)
+
+    image = Image.new('1', (128, 64))
+    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
+    displayImage(image)
+    getAnyKeyEvent()  # Press any key to proceed
+    return

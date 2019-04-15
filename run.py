@@ -10,15 +10,7 @@ workDir = os.path.dirname(os.path.realpath(__file__))
 
 
 def start():
-    image = Image.open(workDir + "/Assets/Img/OP_1Connect_64.png").convert("1")
-    displayImage(image)
-    # start_OP_1_Connection()
-    connected = Image.new('1', (128, 64))
-    draw = ImageDraw.Draw(connected)
-    draw.text((30, 25), "Connected !", font=getFont(), fill='white')
-    displayImage(connected)
     currentCursor = 1
-
     # Initialize Menu System
     pg = Menu_Page_Router.PageRouter()
     # Start First Page
@@ -53,12 +45,8 @@ def start():
             currentCursor = 1
 
         elif key == "B":
-            # pg.renderPage(1, currentCursor)
-            # currentCursor = 1
             pass
         elif key == "A":
-            # currentCursor = 1
-            # pg.renderPage(-1, 1)
             pass
 
         else:
@@ -76,5 +64,4 @@ if __name__ == "__main__":
     # while True:
     #     print("\nStarting " + filename)
     #     p = Popen("python " + filename, shell=True)
-        # p.wait()
-
+    # p.wait()

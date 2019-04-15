@@ -1,5 +1,7 @@
 import os
 
+
+OP_1_MountPath = ""
 config = {
     "OP_1_USB_ID": "*Teenage_OP-1*",
     "USB_VENDOR": 0x2367,
@@ -16,12 +18,10 @@ config = {
 # For System Use
 savePaths = {
     "OP_1_System_Path": config["OP_1_Mounted_Dir"],
-    "OP_1_Drum": config["OP_1_Mounted_Dir"] + "drum",
-    "OP_1_Synth": config["OP_1_Mounted_Dir"] + "synth",
-    "OP_1_Tape": config["OP_1_Mounted_Dir"] + "tape",
-    "OP_1_Album": config["OP_1_Mounted_Dir"] + "album",
-    # "OP_1_Synth": "/home/pi/Desktop/OP1_File_Organizer/SampleOP1Dir/SampleOP1Dir/synth",
-
+    "OP_1_Drum": config["OP_1_Mounted_Dir"] + "/drum",
+    "OP_1_Synth": config["OP_1_Mounted_Dir"] + "/synth",
+    "OP_1_Tape": config["OP_1_Mounted_Dir"] + "/tape",
+    "OP_1_Album": config["OP_1_Mounted_Dir"] + "/album",
 
     # Local Backup Paths
     "Local_Dir": config["LocalBackupPath"],

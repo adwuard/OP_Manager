@@ -3,10 +3,10 @@ import os
 import time
 from os import listdir
 from PIL import Image, ImageDraw
-from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay
-from OP_1_Connection import currentStorageStatus
+from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont
+from OP_1_Connection import currentStorageStatus, get_abbreviation, update_Current_Storage_Status, check_OP_1_Connection
 from config import config, savePaths
-from file_util import getDirFileList, analyzeAIF
+from file_util import getDirFileList, analyzeAIF, fileTransferHelper, deleteHelper
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -44,7 +44,6 @@ class fileBrowser:
     def clearCopyQueue(self):
         self.copyQueue = []
 
-
     def prevPage(self):
         if len(self.histQueue) > 1:
             self.histQueue = self.histQueue[:-1]
@@ -54,6 +53,10 @@ class fileBrowser:
         else:
             # Exit Current Program
             return False
+
+    def updatePage(self):
+        self.currentDirLst = sorted([f for f in listdir(self.structCurrentPath()) if not f.startswith(".")])
+        self.copyQueue = []
 
     def getCopyQueue(self):
         return self.copyQueue
@@ -131,41 +134,68 @@ def getScrollBarSize(lst):
         return scrollFullSize * scale(lstSize, (5, 50), (0.5, 0.05))
 
 
-def RenderOptionsMenu(lst):
+def RenderOptionsMenu(lst, title="action"):
     """
     Renders items in given list, and return the string whatever user chooses
+    :param title:
     :param lst: list of strings to render  Example: ["Upload", "Rename", "Delete"]
     :return: String the user choose
     """
-    cursor = 1
+    actualFilePointer = 1
+    currentCursor = 1
+    shortArray = []
     while True:
         image = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(image)
-
         draw.rectangle([(0, 0), (128, 10)], 'white')
-        draw.text((0, 2), "Actions", fill='black', font=getFont())
+        draw.text((0, 2), title, fill='black', font=getFont())
 
-        for i in range(0, len(lst)):
-            draw.text((10, (i + 1) * 10), str(lst[i]), fill='white', font=getFont())
+        shortArray = shiftArray(lst, shortArray, 0)
 
-        draw.text((2, cursor * 10), ">", fill='white', font=getFont())
+        for i in range(0, len(shortArray)):
+            draw.text((10, (i + 1) * 10), str(shortArray[i]), fill='white', font=getFont())
+
+        # Render Scroll Bar
+        if len(lst) > 5:
+            scrollBarLength = int(getScrollBarSize(lst))
+            offset = getOffset(lst, actualFilePointer - 1, scrollBarLength)
+            draw.line((127, 10 + offset, 127, 10 + scrollBarLength + offset),
+                      fill="white", width=1)
+
+        draw.text((2, currentCursor * 10), ">", fill='white', font=getFont())
         displayImage(image)
-        time.sleep(0.1)
 
         key = getKeyStroke()
         if key == "UP":
-            if not cursor - 1 < 1:
-                cursor -= 1
+            if currentCursor - 1 < 1:
+                temp = shortArray
+                shortArray = shiftArray(lst, shortArray, -1)
+                if temp != shortArray:
+                    actualFilePointer -= 1
+            else:
+                currentCursor -= 1
+                actualFilePointer -= 1
+
         if key == "DOWN":
-            if not cursor + 1 > len(lst):
-                cursor += 1
+            if currentCursor + 1 > len(shortArray):
+                temp = shortArray
+                shortArray = shiftArray(lst, shortArray, 1)
+                if temp != shortArray:
+                    actualFilePointer += 1
+            else:
+                currentCursor += 1
+                actualFilePointer += 1
+        if key == "LEFT":
+            return "RETURN"
+        if key == "RIGHT":
+            return lst[actualFilePointer - 1]
         if key == "A":
             return "RETURN"
         if key == "B":
-            return lst[cursor - 1]
+            return lst[actualFilePointer - 1]
 
 
-def renderFolders(path, upload_download):
+def renderFolders(path, upload_download, dest):
     actualFilePointer = 1
     currentCursor = 1
     shortArray = []
@@ -173,17 +203,13 @@ def renderFolders(path, upload_download):
 
     fb = fileBrowser(path)
 
-    sampler = currentStorageStatus["sampler"]
-    synth = currentStorageStatus["synth"]
-    drum = currentStorageStatus["drum"]
-
-    drum, synth, sampler = 42, 100, 42
+    sampler, synth, drum = update_Current_Storage_Status()
 
     if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
         # Display synth and Sample Available
-        availableSlots = synth + sampler
+        availableSlots = config["Max_Synth_Synthesis_patches"] + config["Max_Synth_Sampler_patches"] - (synth + sampler)
     else:
-        availableSlots = drum
+        availableSlots = config["Max_Drum_Patches"] - drum
 
     # RenderFolders
     while True:
@@ -194,7 +220,7 @@ def renderFolders(path, upload_download):
 
         draw.text((2, -1), os.path.basename(fb.structCurrentPath()[:-1]), fill='black', font=getFont())
 
-        if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
+        if "synth" in fb.structCurrentPath().lower():
             # Display synth and Sample Available
             draw.text((108, -2), str(availableSlots), fill='white', font=getFont())
         else:
@@ -224,9 +250,9 @@ def renderFolders(path, upload_download):
                     synType, FX, LFO = "N/A", "N/A", "N/A"
                     pass
                 # Render Patch Type
-                draw.text((90, 16), str(synType), fill='white', font=getFont())
-                draw.text((90, 35), str(FX), fill='white', font=getFont())
-                draw.text((90, 53), str(LFO), fill='white', font=getFont())
+                draw.text((90, 17), str(get_abbreviation(synType)), fill='white', font=getSmallFont())
+                draw.text((90, 35), str(get_abbreviation(FX)), fill='white', font=getSmallFont())
+                draw.text((90, 54), str(get_abbreviation(LFO)), fill='white', font=getSmallFont())
 
             # Remove extension for display and dash out long file names
             i = i.replace(".aif", "")
@@ -280,15 +306,13 @@ def renderFolders(path, upload_download):
                 actualFilePointer += 1
 
         if key == "LEFT":
-            if len(fb.histQueue) == 1:
-                # No more Page to return to, exit the page
-                return
-            else:
-                currentCursor = 1
-                actualFilePointer = 1
+            if len(fb.histQueue) > 1:
+                currentCursor = actualFilePointer = 1
                 availableSlots += len(fb.getCopyQueue())
                 fb.clearCopyQueue()
                 fb.prevPage()
+            else:
+                return
 
         if key == "RIGHT":
             if len(fb.getCopyQueue()) == 0 and "aif" not in fb.getDirList()[actualFilePointer - 1]:
@@ -306,23 +330,27 @@ def renderFolders(path, upload_download):
                 if os.path.isdir(selectedFolderPath):
                     selectedDisplay.append(currentFile)
                     for i in getDirFileList(selectedFolderPath):
-                        fb.addToCopyQueue(i)
-                        availableSlots -= 1
+                        fb.addToCopyQueue(currentFile + "/" + i)
+                        if "media" not in fb.structCurrentPath():
+                            availableSlots -= 1
                 else:
                     fb.addToCopyQueue(currentFile)
                     selectedDisplay.append(currentFile)
-                    availableSlots -= 1
+                    if "media" not in fb.structCurrentPath():
+                        availableSlots -= 1
             else:
                 # Remove form copy
                 if os.path.isdir(selectedFolderPath):
                     selectedDisplay.remove(currentFile)
                     for i in getDirFileList(selectedFolderPath):
-                        fb.removeFromCopyQueue(i)
-                        availableSlots += 1
+                        fb.removeFromCopyQueue(currentFile + "/" + i)
+                        if "media" not in fb.structCurrentPath():
+                            availableSlots += 1
                 else:
                     fb.removeFromCopyQueue(currentFile)
                     selectedDisplay.remove(currentFile)
-                    availableSlots += 1
+                    if "media" not in fb.structCurrentPath():
+                        availableSlots += 1
 
         if key == "A":
             print("")
@@ -331,43 +359,63 @@ def renderFolders(path, upload_download):
             ##This part need redo
             currentFile = fb.getDirList()[actualFilePointer - 1]
             selectedFolderPath = fb.structCurrentPath() + currentFile
-            rtn = ""
+            fileCount = len(fb.getCopyQueue())
             if len(fb.getCopyQueue()) == 0 or len(selectedDisplay) == 1:
+                # Takes case if non of the folder or file is selected
                 if os.path.isdir(selectedFolderPath):
                     for i in getDirFileList(selectedFolderPath):
-                        fb.addToCopyQueue(i)
+                        fb.addToCopyQueue(currentFile + "/" + i)
                     fileCount = len(fb.getCopyQueue())
                     # availableSlots += len(fb.getCopyQueue())
-                    rtn = RenderOptionsMenu([upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
+                    rtn = RenderOptionsMenu(
+                        [upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
                 else:
                     fb.addToCopyQueue(currentFile)
                     # availableSlots += 1
                     rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
+
+                if rtn == "RETURN":
+                    availableSlots += fileCount
             else:
-                fileCount = len(fb.getCopyQueue())
-                rtn = RenderOptionsMenu([upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
+                if fileCount == 1:
+                    rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
+
+                else:
+                    rtn = RenderOptionsMenu(
+                        [upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
                 if rtn == "RETURN":
                     availableSlots += fileCount
 
-            if "Upload" in rtn:
+            if "Upload" in rtn or "Backup" in rtn:
                 # List allowed
-                print("Upload", fb.getCopyQueue())
-                pass
+                if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                    try:
+                        copyQueue = fb.getCopyQueue()
+                        fileTransferHelper(copyQueue, dest)
+                    except:
+                        pass
+
             elif "Delete" in rtn:
                 # List allowed
-                print("Delete", fb.getCopyQueue())
-                pass
+                if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                    try:
+                        deleteHelper(fb.getCopyQueue())
+                        fb.updatePage()
+                    except:
+                        pass
 
             elif "Rename" in rtn:
                 # Only one item is allowed
-                print("Rename", fb.getCopyQueue())
-                pass
+                # Rename Page
 
-            # if rtn == "RETURN":
+                print("Rename", fb.getCopyQueue())
+
             currentCursor = 1
             actualFilePointer = 1
             fb.clearCopyQueue()
             selectedDisplay = []
 
-            # Update Remain Available Patches
+            # Update Remain Available Patches Here
+        sampler, synth, drum = update_Current_Storage_Status()
 
+# Python Bus Error can not open resource. Maybe For a rebuilt.
