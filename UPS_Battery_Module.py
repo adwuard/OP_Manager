@@ -56,13 +56,14 @@ def readVoltageADS1115():
     val = adc.read_adc(0, GAIN=1)
     return val
 
+
 def readCapacityADS1115():
     # "This function calculates the remaining batter capacity from the battery voltage read from the ADS1115"
     voltage = readCapacityADS1115()
     percentage = (voltage - LIPO_MIN_VOLTAGE) * (100 - 0) / (LIPO_MAX_VOLTAGE - LIPO_MIN_VOLTAGE) + 0 # MAPS THE VOLTAGE 4.2-3.6 to 0->100%
     capacity = int(percentage)
     if capacity >= FULL_BATT_PERCENTAGE:
-        return "Full"
+        return "FULL"
     elif capacity < LOW_BATT_PERCENTAGE:
         return "LOW"
     else:
@@ -91,7 +92,7 @@ def readCapacityRaspiUPS():
     capacity = int(capacity * 1.1)
 
     if capacity >= FULL_BATT_PERCENTAGE:
-        return "Full"
+        return "FULL"
     elif capacity < LOW_BATT_PERCENTAGE:
         return "LOW"
     else:
