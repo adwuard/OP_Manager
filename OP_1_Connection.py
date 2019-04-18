@@ -5,7 +5,7 @@ import usb.util
 import usb.core
 from PIL import ImageDraw, Image
 from psutil import disk_partitions
-
+import username
 from GPIO_Init import displayImage, getFont
 from config import config, savePaths
 
@@ -28,54 +28,89 @@ currentStorageStatus = {
 
 
 def is_connected():
-    return usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["USB_PRODUCT"]) is not None
+    if usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["USB_PRODUCT"]) is not None:
+        return True
+    else: 
+        return False
 
 
-# def wait_for_connection():
-#     try:
-#         if is_connected():
-#             print("Connected!")
-#             break
-#         else:
-#             return
-#     except KeyboardInterrupt:
-#         sys.exit(0)
+#TODO ADD WHILE
+def wait_for_connection():
+        if is_connected():
+            print("Connected!")
+        else:
+            print("not connected")
+        time.sleep(2)
 
 
-# Mounting
-def mountdevice(source, target, fs, options=''):
-    ret = os.system('mount {} {}'.format(source, target))
+#mountdevice(config["OP_1_Mounted_Dir"],
+# Mounting FAT32 with user 
+def mountdevice(source, target):
+    print("mount device with !" + source + "! !" + target + "! !" + username() +"!")
+
+    ret = os.system('sudo -E mount {} {}'.format(source, target))
     if ret not in (0, 8192):
         raise RuntimeError("Error mounting {} on {}: {}".format(source, target, ret))
+    config["OP_1_Mounted_Dir"] = target
 
 
 def unmountdevice(target):
     ret = os.system('umount {}'.format(target))
     if ret != 0:
         raise RuntimeError("Error unmounting {}: {}".format(target, ret))
+    os.system("sudo rm -R " + config["OP_1_Mounted_Dir"])
+    config["OP_1_Mounted_Dir"] = ""
+    print("unmount op1 finised")
 
 
+#get the system mount path - /dev/sda
 def getmountpath():
     o = os.popen('readlink -f /dev/disk/by-id/' + config["OP_1_USB_ID"]).read()
     return o.rstrip()
 
-
+#chekcs if the partiion is mounted if not it return ""
 def getMountPath():
     mountpath = getmountpath()
-    print(mountpath)
     # mountPoint = ""
     for i, disk in enumerate(disk_partitions()):
+        print(disk)
         if disk.device == mountpath:
             mountPoint = disk.mountpoint
             config["OP_1_Mounted_Dir"] = mountPoint
+            print(config["OP_1_Mounted_Dir"])
             return mountPoint
+    return ""
+
+
+def is_mounted():
+    if(getMountPath() == ""):
+        return False
+    else:
+        return True
+
+
+def do_mount():
+    wait_for_connection()
+    
+    if (not is_mounted()):
+        try:
+            print("-- device not mounted")
+            mountpath = getmountpath()
+            config["USB_Mount_Path"] = mountpath
+            create_mount_point()
+            mountdevice( config["USB_Mount_Path"],config["TargetOp1MountDir"])
+        except:
+            return False
+        return True
+    else:
+        print("-- device mounted --")
+        return True
+
 
 
 def check_OP_1_Connection():
     if is_connected():
-        mountpath = getMountPath()
-        print("Mount Path", mountpath)
-        config["USB_Mount_Path"] = mountpath
+
         return True
     else:
         connected = Image.new('1', (128, 64))
@@ -113,6 +148,20 @@ def unmount_OP_1():
         displayImage(unmountDisplay)
         time.sleep(1)
         return False
+
+
+
+def create_mount_point():
+    try:
+         os.system("sudo mkdir -p " + config["TargetOp1MountDir"])
+         os.system("sudo chmod 0777 " + config["TargetOp1MountDir"])
+    except:
+        print("error cant create mount point directory")
+
+
+
+
+
 
 
 def get_abbreviation(text):

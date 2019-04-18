@@ -6,11 +6,10 @@ from shutil import rmtree
 
 from PIL import Image, ImageDraw
 from smbus2 import smbus2
-
 from FileBrowser import renderFolders, RenderOptionsMenu, renderRename
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont
 from Midi import startMidi, usbMIDIOut
-from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection
+from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount
 from TapesBackup import TapeBackup
 from UPS_Battery_Module import readCapacity
 from file_util import getDirFileList, deleteHelper
@@ -127,6 +126,10 @@ class PageRouter:
             self.renderPage(-1, 1)
 
         if event == "act_5_Backup_All_Patches":
+            image = Image.new('1', (128, 64))
+            image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
+            displayImage(image)
+            time.sleep(0.1)
             self.renderPage(-1, 1)
 
         if event == "USB_MIDI_In_Test":
@@ -142,6 +145,15 @@ class PageRouter:
             try:
                 if unmount_OP_1():
                     print("Ejected")
+            except:
+                print("Error")
+            self.renderPage(-1, 1)
+        
+        # ============= MOUNT OPTION ==============
+        if event == "act_ESC_Mount_OP_1":
+            try:
+                if do_mount():
+                    print("Mounted")
             except:
                 print("Error")
             self.renderPage(-1, 1)

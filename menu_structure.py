@@ -14,6 +14,9 @@ MIDI =[
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
+    ["Remove All User Data", "Remove all Data"],
+    ["Mount OP1", "act_ESC_Mount_OP_1"],
+    ["Eject OP-1", "act_ESC_Eject_OP_1"]
     ["MIDI Host", MIDI],
     ["Remove All User Data", "Remove all Data"]
 ]
@@ -66,7 +69,7 @@ MainPage = [
     ["Main Menu", -1],
     ["Projects", ProjectsPage],
     ["Patches", PatchesPage],
-    ["Cloud Transfer", SSHPage],
+    ["SSH Transfer", SSHPage],
     ["Utilities", Utilities],
     ["Eject", "act_ESC_Eject_OP_1"]
 ]
