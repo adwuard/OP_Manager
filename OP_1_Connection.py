@@ -1,5 +1,5 @@
+import json
 import os
-import sys
 import time
 import usb.util
 import usb.core
@@ -8,7 +8,6 @@ from psutil import disk_partitions
 import username
 from GPIO_Init import displayImage, getFont
 from config import config, savePaths
-from file_util import getDirFileList, get_visible_folders, analyzeAIF
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -23,9 +22,9 @@ currentStorageStatus = {
 
 
 # OP-1 connection
-def ensure_connection():
-    if not is_connected():
-        wait_for_connection()
+# def ensure_connection():
+#     if not is_connected():
+#         wait_for_connection()
 
 
 def is_connected():
@@ -111,6 +110,7 @@ def do_mount():
 
 def check_OP_1_Connection():
     if is_connected():
+
         return True
     else:
         connected = Image.new('1', (128, 64))
@@ -121,7 +121,6 @@ def check_OP_1_Connection():
         config["OP_1_Mounted_Dir"] = ""
         time.sleep(1)
         return False
-
 
 
 def unmount_OP_1():
@@ -166,6 +165,9 @@ def create_mount_point():
 
 
 def get_abbreviation(text):
+    """
+    Rename texts to abbreviations in order to fit better to the screen
+    """
     if text == "Element":
         return "Elem"
     elif text == "Tremolo":
@@ -187,6 +189,23 @@ def getFileCount(startPath):
     return filesCount
 
 
+def analyzeAIF(pathTOAIF):
+    with open(pathTOAIF, 'rb') as reader:
+        file = str(reader.read())
+    strBuilder = ""
+    startflag = False
+    for i in file:
+        if i == "}":
+            strBuilder += "}"
+            break
+        if startflag: strBuilder += i
+        if not startflag and i == "{":
+            strBuilder += i
+            strBuilder = True
+    data = json.loads(strBuilder)
+    return data.get("type").capitalize(), data.get("fx_type").capitalize(), data.get("lfo_type").capitalize()
+
+
 def checkOccupiedSlots(startPath):
     patchType = ""
     sampleEngine = []
@@ -198,10 +217,8 @@ def checkOccupiedSlots(startPath):
             if f.endswith('.aif') and not f.startswith("."):
                 try:
                     patchType, fx, lfo = analyzeAIF(currentFilePath)
-                    print(patchType, fx, lfo)
                 except:
                     pass
-                # print(patchType, fx, lfo)
             if patchType == "Drum" or patchType == "Dbox" and "drum" in currentFilePath:
                 drum.append(currentFilePath)
             elif patchType == "Sampler":
@@ -212,12 +229,7 @@ def checkOccupiedSlots(startPath):
 
 
 def update_Current_Storage_Status():
-    # sampler, synth, none = checkOccupiedSlots(config["OP_1_Mounted_Dir"]+"/synth")
-    # none, none, drum = checkOccupiedSlots(config["OP_1_Mounted_Dir"]+"/drum")
-    sampler = getFileCount(config["OP_1_Mounted_Dir"] + "/synth")
-    synth = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
-    drum = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
-    currentStorageStatus["sampler"] = sampler
-    currentStorageStatus["synth"] = synth
-    currentStorageStatus["drum"] = drum
-    return sampler, synth, drum
+    currentStorageStatus["sampler"] = getFileCount(config["OP_1_Mounted_Dir"] + "/synth")
+    currentStorageStatus["synth"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
+    currentStorageStatus["drum"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
+    return currentStorageStatus["sampler"], currentStorageStatus["synth"], currentStorageStatus["drum"]

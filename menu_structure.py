@@ -4,12 +4,21 @@ SSHPage = [
     # "Connect", -1
 ]
 
+
+MIDI =[
+    ["MIDI", -1],
+    ["USB MIDI IN Test", "USB_MIDI_In_Test"],
+    ["USB MIDI OUT Test", "USB_MIDI_Out_Test"]
+]
+
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
     ["Remove All User Data", "Remove all Data"],
     ["Mount OP1", "act_ESC_Mount_OP_1"],
     ["Eject OP-1", "act_ESC_Eject_OP_1"]
+    ["MIDI Host", MIDI],
+    ["Remove All User Data", "Remove all Data"]
 ]
 
 # PresetPage = [
@@ -44,17 +53,24 @@ PatchesPage = [
     ["Manage OP-1 Patches", OP_1_Patches]
 ]
 
+BackupPage =[
+    ["Backup Projects", -1],
+    ["Backup tracks + album", "act_Backup_Project_From_OP_1"],
+    ["Backup tracks", "act_Load_Project_From_Local_only_tracks"]
+]
+
 ProjectsPage = [
     ["Manage Projects", -1],
-    ["Backup Project", "act_Backup_Project_From_OP_1"],
+    ["Backup Project", BackupPage],
     ["Local Projects", "act_Load_Project_From_Local"]
 ]
 
 MainPage = [
-    ["OP-1 File Manager", -1],
+    ["Main Menu", -1],
     ["Projects", ProjectsPage],
     ["Patches", PatchesPage],
     ["SSH Transfer", SSHPage],
-    ["Utilities", Utilities]
+    ["Utilities", Utilities],
+    ["Eject", "act_ESC_Eject_OP_1"]
 ]
 

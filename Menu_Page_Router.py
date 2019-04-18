@@ -1,12 +1,18 @@
 import os
 import subprocess
 import time
+from os.path import basename, isdir
+from shutil import rmtree
+
 from PIL import Image, ImageDraw
-from FileBrowser import renderFolders, RenderOptionsMenu
-from GPIO_Init import getAnyKeyEvent, displayImage, getFont
+from smbus2 import smbus2
+from FileBrowser import renderFolders, RenderOptionsMenu, renderRename
+from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont
+from Midi import startMidi, usbMIDIOut
 from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount
 from TapesBackup import TapeBackup
-from file_util import getDirFileList
+from UPS_Battery_Module import readCapacity
+from file_util import getDirFileList, deleteHelper
 from menu_structure import MainPage
 from config import config, savePaths
 from run import start
@@ -17,10 +23,14 @@ __date__ = "2019-04-02"
 workDir = os.path.dirname(os.path.realpath(__file__))
 
 
+
+
 class PageRouter:
     pageQue = [MainPage]
     currentDist = []
-
+    font = getFont()
+    smallFont = getSmallFont()
+    
     def __init__(self):
         self.processState = False
         self.cursor = 1
@@ -76,17 +86,25 @@ class PageRouter:
             self.renderPage(-1, 1)
 
         if event == "act_Load_Project_From_Local":
-            rtn = "RETURN"
-            RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
-            while rtn == "RETURN":
-                rtn = RenderOptionsMenu(["Upload", "Rename", "Delete"])
+            # rtn = "RETURN"
+            while True:
                 temp = RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
                 if temp == "RETURN":
                     break
+                else:
+                    # while rtn == "RETURN":
+                    rtn = RenderOptionsMenu(["Upload", "Rename", "Delete"])
+                    # temp = RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
+                    if rtn == "Upload":
+                        pass
+                    elif rtn== "Rename":
+                        renderRename(os.path.join(savePaths["Local_Projects"], temp))
+                    elif rtn== "Delete":
+                        deleteHelper([os.path.join(savePaths["Local_Projects"], temp)])
+                    elif rtn == "RETURN":
+                        pass
+
             self.renderPage(-1, 1)
-
-
-
 
         # ===========Patches Actions===========
         if event == "OP1_Synth_Patches":
@@ -112,6 +130,14 @@ class PageRouter:
             image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
             displayImage(image)
             time.sleep(0.1)
+            self.renderPage(-1, 1)
+
+        if event == "USB_MIDI_In_Test":
+            startMidi()
+            self.renderPage(-1, 1)
+
+        if event == "USB_MIDI_Out_Test":
+            usbMIDIOut()
             self.renderPage(-1, 1)
 
         # ===========Eject Actions===========
@@ -148,22 +174,15 @@ class PageRouter:
             self.renderPage(-1, 1)
 
     def renderStandardMenu(self, draw, currentDist=None, cursor=1):
-        font = getFont()
         draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
         draw.rectangle([(0, 0), (128, 10)], 'white')
-        draw.text((2, 0), str(currentDist[0][0]), fill='black', font=font)
+        draw.text((2, 0), str(currentDist[0][0]), fill='black', font=self.font)
+        draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
         for i in range(1, len(currentDist)):
-            draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=font)
-        draw.text((2, cursor * 10), ">", fill='white', font=font)
+            draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=self.font)
+        draw.text((2, cursor * 10), ">", fill='white', font=self.font)
 
-    def renderRename(self, file=""):
-        """
-        Given a file path, renders for rename, with confirmation for rename or cancel,
-        :param file:
-        :return:
-        """
 
-        pass
 
     # Useful in "Are you sure to delete.", "Are you sure to rename"
     def renderConfirmation(self, message=""):
