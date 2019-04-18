@@ -18,7 +18,7 @@ Utilities = [
     ["Mount OP1", "act_ESC_Mount_OP_1"],
     ["Eject OP-1", "act_ESC_Eject_OP_1"]
     ["MIDI Host", MIDI],
-    ["Remove All User Data", "Remove all Data"]
+    ["Power Off System", "act_POWER_OFF"],
 ]
 
 # PresetPage = [
@@ -71,6 +71,5 @@ MainPage = [
     ["Patches", PatchesPage],
     ["SSH Transfer", SSHPage],
     ["Utilities", Utilities],
-    ["Eject", "act_ESC_Eject_OP_1"]
 ]
 

@@ -3,6 +3,7 @@ import subprocess
 import time
 from os.path import basename, isdir
 from shutil import rmtree
+from subprocess import call
 
 from PIL import Image, ImageDraw
 from smbus2 import smbus2
@@ -157,6 +158,13 @@ class PageRouter:
             except:
                 print("Error")
             self.renderPage(-1, 1)
+        # ========= POWER OFF ====================
+        if event == "act_POWER_OFF":
+            image = Image.new('1', (128, 64))
+            image.paste(Image.open(workDir + "/Assets/Img/PowerOff.png").convert("1"))
+            displayImage(image)
+            time.sleep(1.0)
+            call("sudo shutdown -h now", shell=True)
 
         if event == "checkStorage":
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
