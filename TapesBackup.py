@@ -2,7 +2,7 @@ import os
 import shutil
 from config import config, savePaths
 from distutils.dir_util import copy_tree
-from file_util import forcedir, removeTree
+from file_util import forcedir
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -18,18 +18,19 @@ class TapeBackup:
 
     def copyToLocal(self):
         op1TapePath, op1AlbumPath = config["OP_1_Mounted_Dir"] + "/tape", config["OP_1_Mounted_Dir"] + "/album"
-        newPath = savePaths["Local_Projects"] + "/" + self.getTime()
-        forcedir(newPath + "/album")
-        forcedir(newPath + "/tape")
+        currentTimeFolder = savePaths["Local_Projects"] + "/" + self.getTime()
+        forcedir(currentTimeFolder + "/album")
+        forcedir(currentTimeFolder + "/tape")
         try:
-            copy_tree(op1AlbumPath, newPath)
-            copy_tree(op1TapePath, newPath)
+            copy_tree(op1AlbumPath, currentTimeFolder)
+            copy_tree(op1TapePath, currentTimeFolder)
         except:
-            shutil.rmtree(newPath)
+            # Connection broken, remove created folder
+            shutil.rmtree(currentTimeFolder)
 
     def loadProjectToOP1(self, localProjectPath):
-        removeTree(config["OP_1_Mounted_Dir"] + "/tape")
-        removeTree(config["OP_1_Mounted_Dir"] + "/album")
+        shutil.rmtree(config["OP_1_Mounted_Dir"] + "/tape")
+        shutil.rmtree(config["OP_1_Mounted_Dir"] + "/album")
         # forcedir(config["OP_1_Mounted_Dir"] + "/tape")
         # forcedir(config["OP_1_Mounted_Dir"] + "/album")
         op1TapePath = config["OP_1_Mounted_Dir"] + "/tape"

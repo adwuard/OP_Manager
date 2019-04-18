@@ -2,11 +2,12 @@ import math
 import os
 import time
 from os import listdir
+from os.path import basename
 from PIL import Image, ImageDraw
-from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont
-from OP_1_Connection import currentStorageStatus, get_abbreviation, update_Current_Storage_Status, check_OP_1_Connection
+from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont, getAnyKeyEvent
+from OP_1_Connection import get_abbreviation, update_Current_Storage_Status, check_OP_1_Connection, analyzeAIF
 from config import config, savePaths
-from file_util import getDirFileList, analyzeAIF, fileTransferHelper, deleteHelper
+from file_util import getDirFileList, fileTransferHelper, deleteHelper
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -83,7 +84,7 @@ def shiftArray(array, shortArray, shift):
     """
     # global currentIndex
     # Max Number of lines can be displayed on the screen
-    PageSize = config["DisplayLines"]
+    PageSize = 5
     # if the list dir can fit in the page, then there's nothing to scroll
     if len(array) == 0 or len(array) < PageSize:
         return array
@@ -129,9 +130,109 @@ def getOffset(lstFull, currentPointer, scrollBarSize):
 
 def getScrollBarSize(lst):
     scrollFullSize = 54
-    lstSize = len(lst) - 1
+    lstSize = len(lst)
     if lstSize > 5:
         return scrollFullSize * scale(lstSize, (5, 50), (0.5, 0.05))
+
+
+def renderRename(file=""):
+    """
+    Given a file path, renders for rename, with confirmation for rename or cancel,
+    :param file:
+    :return:
+    """
+    dirPath, originalName = os.path.dirname(file), basename(file)
+    newName = list("__________")
+    ascii_uppercase, digits, space = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", "_"
+    curser, charPointer = 15, 0
+
+    while True:
+        image = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
+        draw.rectangle([(0, 0), (128, 10)], 'white')
+        if os.path.isdir(file):
+            draw.text((2, 0), str("Rename Folder"), fill='black', font=getFont())
+        else:
+            draw.text((2, 0), str("Rename Patch"), fill='black', font=getFont())
+        draw.text((1, 15), str(originalName.split(".")[0]), font=getFont(), fill="white")
+        # Render Rename Edit Space
+        offset, spacing = 15, 10
+        for i in newName:
+            draw.text((offset, 35), str(i), font=getFont(), fill="white")
+            offset += spacing
+        # Render cursor
+        draw.text((curser, 45), str("^"), font=getFont(), fill="white")
+        displayImage(image)
+
+        key = getKeyStroke()
+        if key == "LEFT":
+            if curser - spacing >= 15:
+                curser -= spacing
+                charPointer -= 1
+        if key == "RIGHT":
+            if curser + spacing < 115:
+                curser += spacing
+                charPointer += 1
+        if key == "UP":
+            if newName[charPointer] == "_":
+                newName[charPointer] = ascii_uppercase[0]
+            elif newName[charPointer] in ascii_uppercase:
+                current = ascii_uppercase.index(str(newName[charPointer]))
+                if current - 1 >= 0:
+                    newName[charPointer] = ascii_uppercase[current - 1]
+            elif newName[charPointer] in digits:
+                current = digits.index(str(newName[charPointer]))
+                if current - 1 >= 0:
+                    newName[charPointer] = digits[current - 1]
+        if key == "DOWN":
+            if newName[charPointer] == "_":
+                newName[charPointer] = ascii_uppercase[0]
+            elif newName[charPointer] in ascii_uppercase:
+                current = ascii_uppercase.index(str(newName[charPointer]))
+                if current + 1 < len(ascii_uppercase):
+                    newName[charPointer] = ascii_uppercase[current + 1]
+            elif newName[charPointer] in digits:
+                current = digits.index(str(newName[charPointer]))
+                if current + 1 < len(digits):
+                    newName[charPointer] = digits[current + 1]
+        if key == "CENTER":
+            if newName[charPointer] == "_":
+                newName[charPointer] = ascii_uppercase[0]
+            elif newName[charPointer] in digits:
+                newName[charPointer] = space
+            elif newName[charPointer] in ascii_uppercase:
+                newName[charPointer] = digits[0]
+        if key == "A":
+            return
+
+        if key == "B":
+            dirlst = os.listdir(dirPath)
+            name = ''.join(newName).replace("_", " ").strip()
+            if newName in dirlst:
+                alreadyExist = Image.new('1', (128, 64))
+                draw = ImageDraw.Draw(alreadyExist)
+                draw.text((30, 25), "Name Already Exist!", font=getFont(), fill='white')
+                displayImage(alreadyExist)
+                pass
+
+            if newName not in dirlst and len(name) != 0:
+                rtn = RenderOptionsMenu(["Yes", "Cancel"], "Confirm")
+                if rtn == "Yes":
+                    # print(dirPath + "/" + originalName, dirPath + "/" + name + ".aif")
+                    if not os.path.isdir(file):
+                        os.rename(dirPath + "/" + originalName, dirPath + "/" + name + ".aif")
+                    else:
+                        os.rename(dirPath + "/" + originalName, dirPath + "/" + name)
+                    image = Image.new('1', (128, 64))
+                    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
+                    displayImage(image)
+                    getAnyKeyEvent()
+                    return
+
+                elif rtn == "Cancel":
+                    pass
+
 
 
 def RenderOptionsMenu(lst, title="action"):
@@ -329,7 +430,7 @@ def renderFolders(path, upload_download, dest):
                 # Decrement Available Patches
                 if os.path.isdir(selectedFolderPath):
                     selectedDisplay.append(currentFile)
-                    for i in getDirFileList(selectedFolderPath):
+                    for i in listdir(selectedFolderPath):
                         fb.addToCopyQueue(currentFile + "/" + i)
                         if "media" not in fb.structCurrentPath():
                             availableSlots -= 1
@@ -342,7 +443,7 @@ def renderFolders(path, upload_download, dest):
                 # Remove form copy
                 if os.path.isdir(selectedFolderPath):
                     selectedDisplay.remove(currentFile)
-                    for i in getDirFileList(selectedFolderPath):
+                    for i in listdir(selectedFolderPath):
                         fb.removeFromCopyQueue(currentFile + "/" + i)
                         if "media" not in fb.structCurrentPath():
                             availableSlots += 1
@@ -356,14 +457,13 @@ def renderFolders(path, upload_download, dest):
             print("")
             # return
         if key == "B":
-            ##This part need redo
             currentFile = fb.getDirList()[actualFilePointer - 1]
             selectedFolderPath = fb.structCurrentPath() + currentFile
             fileCount = len(fb.getCopyQueue())
             if len(fb.getCopyQueue()) == 0 or len(selectedDisplay) == 1:
                 # Takes case if non of the folder or file is selected
                 if os.path.isdir(selectedFolderPath):
-                    for i in getDirFileList(selectedFolderPath):
+                    for i in listdir(selectedFolderPath):
                         fb.addToCopyQueue(currentFile + "/" + i)
                     fileCount = len(fb.getCopyQueue())
                     # availableSlots += len(fb.getCopyQueue())
@@ -391,6 +491,9 @@ def renderFolders(path, upload_download, dest):
                 if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
                     try:
                         copyQueue = fb.getCopyQueue()
+
+                        if dest == "":
+                            dest = config["OP_1_Mounted_Dir"]
                         fileTransferHelper(copyQueue, dest)
                     except:
                         pass
@@ -407,8 +510,8 @@ def renderFolders(path, upload_download, dest):
             elif "Rename" in rtn:
                 # Only one item is allowed
                 # Rename Page
-
-                print("Rename", fb.getCopyQueue())
+                print(fb.getCopyQueue()[0])
+                renderRename(str(fb.getCopyQueue()[0]))
 
             currentCursor = 1
             actualFilePointer = 1

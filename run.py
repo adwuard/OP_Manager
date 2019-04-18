@@ -1,7 +1,10 @@
 import os
+import time
+
 from PIL import Image, ImageDraw
 import Menu_Page_Router
-from GPIO_Init import getKeyStroke, displayImage, getFont
+from GPIO_Init import getKeyStroke, displayImage, getFont, checkKeyInterrupt
+from Midi import startMidi
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -20,8 +23,7 @@ def start():
         # if not is_connected():
         #     print("Disconnected")
         #     start()
-
-        key = getKeyStroke()
+        key = checkKeyInterrupt()
         if key == "UP":
             if currentCursor - 1 >= 1:
                 currentCursor -= 1
@@ -49,6 +51,10 @@ def start():
         elif key == "A":
             pass
 
+        elif key =="":
+            #Update Screen
+            pg.renderPage(0, currentCursor)
+
         else:
             raise ("Log: Key ", key, "Not recognized")
 
@@ -57,6 +63,9 @@ if __name__ == "__main__":
     # from multiprocessing import Process
     # server = Process(target=app.run)
     # server.start()
+
+    # ============================
+    # need to
     start()
     # server.terminate()
     # server.join()

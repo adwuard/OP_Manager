@@ -1,14 +1,10 @@
-import json
-from os.path import abspath, join, pardir, basename, dirname
-from time import sleep
-
-from PIL import Image, ImageDraw
-
-from GPIO_Init import displayImage, getAnyKeyEvent, getFont
-from config import config
 import os
+import time
+from os.path import abspath, join, pardir, basename, dirname, isdir
 import shutil
 import ntpath
+from PIL import Image, ImageDraw
+from GPIO_Init import displayImage, getAnyKeyEvent, getFont, displayPng
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -17,8 +13,15 @@ workDir = os.path.dirname(os.path.realpath(__file__))
 
 
 # =================== Helper Tools===================
-# Copy Entire Folder
 def copytree(src, dst, symlinks=False, ignore=shutil.ignore_patterns('.*', '_*')):
+    """
+    Copy Entire Folder
+    :param src: source path
+    :param dst: destination path
+    :param symlinks: optional
+    :param ignore: pass shutil.ignore_patterns('.*', '_*')
+    :return:
+    """
     for item in os.listdir(src):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -28,8 +31,12 @@ def copytree(src, dst, symlinks=False, ignore=shutil.ignore_patterns('.*', '_*')
             shutil.copy2(s, d)
 
 
-# This creat necessary folders to the path if not already exists
 def forcedir(path):
+    """
+    This creat necessary folders to the path if not already exists
+    :param path: path to folder existence check
+    :return: NA
+    """
     if not os.path.isdir(path):
         os.makedirs(path)
 
@@ -52,63 +59,49 @@ def copyListOfDirs(lst, target_Dir):
         forcedir(target_Dir + "/" + foldername)
         copytree(i, target_Dir + "/" + foldername)
 
-
-def rename(src, dst):
-    os.rename(src, dst)
-
-
-def get_visible_folders(d):
-    return list(filter(lambda x: os.path.isdir(os.path.join(d, x)), os.listdir(d)))
+# =======================List Files======================
+def get_visible_folders(dirPath=""):
+    """
+    Get visible folder from given path
+    :param dir: path to directory
+    :return: list of directories found
+    """
+    lst = []
+    try:
+        lst = list(filter(lambda x: os.path.isdir(os.path.join(dirPath, x)), os.listdir(dirPath)))
+    except:
+        pass
+    return lst
 
 
 def getDirFileList(d):
     return list(filter(lambda x: x[0] != '.', os.listdir(d)))
 
 
-def analyzeAIF(pathTOAIF):
-    with open(pathTOAIF, 'rb') as reader:
-        file = str(reader.read())
-    strbuilder = ""
-    startflag = False
-    for i in file:
-        if i == "}":
-            strbuilder += "}"
-            break
-        if startflag:
-            strbuilder += i
-        if not startflag and i == "{":
-            strbuilder += i
-            startflag = True
-    data = json.loads(strbuilder)
-    # print(data)
-    return data.get("type").capitalize(), data.get("fx_type").capitalize(), data.get("lfo_type").capitalize()
 
-
-# Removes A File
-# os.remove("")
-
-# removes all files including the folder itself
-
-def removeTree(path):
-    shutil.rmtree(path)
-
-
-# Remove files inside a dir
-# d='/home/me/test'
-# filesToRemove = [os.path.join(d,f) for f in os.listdir(d)]
-# for f in filesToRemove:
-#     os.remove(f)
-
-# fileTransferHelper(["..../OP1_File_Organizer/NotUsed/..../patch.aif"], "/..../synth")
 def fileTransferHelper(srclist, dest):
+    """
+    Pass in list of paths to file, and a copy root destination
+    It will create patch's parent folder if now already exist in the destination folder
+    For example:
+        fileTransferHelper(["..../OP1_File_Organizer/NotUsed/..../patch.aif"], dest = "/..../synth")
+
+    :param srclist: ["pwd/1.aif", "pwd/2.aif", "pwd/3.aif",....., "pwd/n.aif"]
+    :param dest: Root of the destination folder
+    :return: NA
+    """
+
+
+
     for i in srclist:
         srcParentFolderName = abspath(join(i, pardir)).split("/")[-1:][0]
         srcBaseName = basename(i)
-        distParentFolderName = dest + "/" + srcParentFolderName
+        distParentFolderName = dest + "/" + str(srcParentFolderName)
+        print(distParentFolderName)
         forcedir(distParentFolderName)
-
         image = Image.new('1', (128, 64))
-        if config["LocalBackupPath"] in srclist[0]:
+
+        if workDir in srclist[0]:
             # Local to OP1
             image.paste(Image.open(workDir + "/Assets/Img/UploadPatches.png").convert("1"))
         else:
@@ -120,29 +113,37 @@ def fileTransferHelper(srclist, dest):
         print(i, distParentFolderName + "/" + srcBaseName)
         shutil.copy2(i, distParentFolderName + "/" + srcBaseName)
 
-    image = Image.new('1', (128, 64))
-    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
-    displayImage(image)
+    displayPng(workDir + "/Assets/Img/Done.png")
     getAnyKeyEvent()  # Press any key to proceed
     return
 
 
 def deleteHelper(srclist):
-    image = Image.new('1', (128, 64))
-    image.paste(Image.open(workDir + "/Assets/Img/Deleting.png").convert("1"))
-    displayImage(image)
-    sleep(0.5)
+    """
+    Takes in a list of full walk path(str) for deletion.
+    And render the delete on the display while deleting.
+    For Example:
+        [filePath1, filePath2, filePath3.......filePath n]
+        or
+        [DirPath1, DirPath2, DirPath3,...., DirPath n]
 
+    :param srclist: list of paths to file or directory
+    :return: NA
+    """
+    displayPng(workDir + "/Assets/Img/Deleting.png")
+    time.sleep(0.2)
     for i in srclist:
-        folder = dirname(i)
-        if os.path.exists(i):
-            os.remove(i)
-
-        if len(os.listdir(folder)) == 0:
-            os.rmdir(folder)
-
-    image = Image.new('1', (128, 64))
-    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
-    displayImage(image)
+        if isdir(i):
+            # If given element in a list is a directory
+            shutil.rmtree(srclist[0])
+        else:
+            folder = dirname(i)
+            if os.path.exists(i):
+                # Check for file existence
+                os.remove(i)
+            if len(os.listdir(folder)) == 0:
+                # If nothing is in the folder, remove the parent folder
+                os.rmdir(folder)
+    displayPng(workDir + "/Assets/Img/Done.png")
     getAnyKeyEvent()  # Press any key to proceed
     return

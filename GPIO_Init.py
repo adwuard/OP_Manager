@@ -1,7 +1,9 @@
 import os
+import time
+
 import RPi.GPIO as GPIO
 import SSD1306
-from PIL import ImageFont
+from PIL import ImageFont, Image
 
 # import Adafruit_GPIO.SPI as SPI
 
@@ -36,6 +38,8 @@ disp = SSD1306.SSD1306_128_64(rst=RST)  # 128x64 display with hardware I2C
 
 # Initialize library and clear image from last session.
 disp.begin()
+
+
 # disp.clear()
 # disp.display()
 
@@ -62,7 +66,14 @@ def displayImage(img):
     disp.display()
 
 
+def displayPng(pathToImage):
+    image = Image.new('1', (128, 64))
+    image.paste(Image.open(pathToImage).convert("1"))
+    displayImage(image)
+
+
 def getKeyStroke():
+    time.sleep(0.1)
     try:
         while 1:
             if not GPIO.input(U_pin):
@@ -81,6 +92,25 @@ def getKeyStroke():
                 return "B"
     except KeyboardInterrupt:
         GPIO.cleanup()
+
+
+def checkKeyInterrupt():
+    if not GPIO.input(U_pin):
+        return "UP"
+    if not GPIO.input(L_pin):
+        return "LEFT"
+    if not GPIO.input(R_pin):
+        return "RIGHT"
+    if not GPIO.input(D_pin):
+        return "DOWN"
+    if not GPIO.input(C_pin):
+        return "CENTER"
+    if not GPIO.input(A_pin):
+        return "A"
+    if not GPIO.input(B_pin):
+        return "B"
+    else:
+        return ""
 
 
 def getAnyKeyEvent():
