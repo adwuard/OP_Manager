@@ -28,3 +28,16 @@ Fill this form if you are interested buying one [Buy Request Form](https://docs.
 - Midi host, CV and Trigger hardware output.
 - Battery Powered
 - Casing
+
+
+
+
+
+
+
+## EXAMPLE UNIT
+
+* RPI W
+* 4000mAh 3.7V Lipo Chell + BMS
+
+<img src="/documentation/IMG_9550.JPG" data-canonical-src="/documentation/IMG_9550.JPG" width="150" height="150" />
