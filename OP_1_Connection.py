@@ -124,14 +124,13 @@ def check_OP_1_Connection():
 
 
 def unmount_OP_1():
-    if config["OP_1_Mounted_Dir"] != "":
+    if is_mounted():
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
         draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
         displayImage(unmountDisplay)
 
-        cmd = "sudo umount " + config["OP_1_Mounted_Dir"]
-        os.system(cmd)
+        unmountdevice(config["OP_1_Mounted_Dir"])
 
         config["OP_1_Mounted_Dir"] = ""
         config["USB_Mount_Path"] = ""
