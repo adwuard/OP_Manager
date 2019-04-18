@@ -9,12 +9,12 @@ config = {
     "USB_Mount_Path": "", # /media/pi/....
     "OP_1_Mounted_Dir": "", # sda/m
     "LocalBackupPath": os.path.dirname(os.path.realpath(__file__))+"/OP_1_Backup_Library/",
-
     "Max_Synth_Sampler_patches": 42,
     "Max_Synth_Synthesis_patches": 100,
     "Max_Drum_Patches": 42,
     "DisplayLines": 5,
-    "TargetOp1MountDir":"/media/op1"
+    "TargetOp1MountDir":"/media/op1",
+    "UPSMETHOND":"RaspiUPS" # RaspiUPS or ADS1115
 }
 
 # For System Use
