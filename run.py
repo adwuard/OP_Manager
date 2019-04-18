@@ -27,10 +27,6 @@ def start():
     pg.renderPage(0, currentCursor)
 
     while 1:         
-        if not is_connected():
-            print("Disconnected, try to reconnect")
-            do_mount()
-            time.sleep(1)
 
         key = checkKeyInterrupt()
         
