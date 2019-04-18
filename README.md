@@ -40,4 +40,4 @@ Fill this form if you are interested buying one [Buy Request Form](https://docs.
 * RPI W
 * 4000mAh 3.7V Lipo Chell + BMS
 
-<img src="/documentation/IMG_9550.JPG" data-canonical-src="/documentation/IMG_9550.JPG" width="150" height="150" />
+<img src="/documentation/IMG_9550.JPG" data-canonical-src="/documentation/IMG_9550.JPG" width="300" />
