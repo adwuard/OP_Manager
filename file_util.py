@@ -5,7 +5,7 @@ from time import sleep
 from PIL import Image, ImageDraw
 
 from GPIO_Init import displayImage, getAnyKeyEvent, getFont
-from config import config
+from config import config,savePaths
 import os
 import shutil
 import ntpath
@@ -26,6 +26,13 @@ def copytree(src, dst, symlinks=False, ignore=shutil.ignore_patterns('.*', '_*')
             shutil.copytree(s, d, symlinks, ignore)
         else:
             shutil.copy2(s, d)
+
+def copyfile(src,dst, with_remove = False):
+    print("copy " + src + " to " + dst)
+    shutil.copy(src,dst)
+
+    if(with_remove):
+        os.remove(src)
 
 
 # This creat necessary folders to the path if not already exists
@@ -146,3 +153,12 @@ def deleteHelper(srclist):
     displayImage(image)
     getAnyKeyEvent()  # Press any key to proceed
     return
+
+
+def createImportantFolders():
+    forcedir(savePaths["Local_Dir"])
+    forcedir(savePaths["Local_Projects"])
+    forcedir(savePaths["Local_Patches"])
+    forcedir(savePaths["Local_Synth"])
+    forcedir(savePaths["Local_Drum"])
+

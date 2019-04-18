@@ -7,7 +7,9 @@ SSHPage = [
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
-    ["Remove All User Data", "Remove all Data"]
+    ["Remove All User Data", "Remove all Data"],
+    ["Mount OP1", "act_ESC_Mount_OP_1"],
+    ["Eject OP-1", "act_ESC_Eject_OP_1"]
 ]
 
 # PresetPage = [
@@ -53,7 +55,6 @@ MainPage = [
     ["Projects", ProjectsPage],
     ["Patches", PatchesPage],
     ["SSH Transfer", SSHPage],
-    ["Utilities", Utilities],
-    ["Eject OP-1", "act_ESC_Eject_OP_1"]
+    ["Utilities", Utilities]
 ]
 

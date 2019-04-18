@@ -12,7 +12,9 @@ config = {
     "Max_Synth_Sampler_patches": 42,
     "Max_Synth_Synthesis_patches": 100,
     "Max_Drum_Patches": 42,
-    "DisplayLines": 5
+    "DisplayLines": 5,
+    "TargetOp1MountDir":"/media/op1"
+
 }
 
 # For System Use
@@ -26,6 +28,7 @@ savePaths = {
     # Local Backup Paths
     "Local_Dir": config["LocalBackupPath"],
     "Local_Projects": config["LocalBackupPath"] + "projects",
+    "Local_Patches": config["LocalBackupPath"] + "patches",
     "Local_Synth": config["LocalBackupPath"] + "patches/synth",
     "Local_Drum": config["LocalBackupPath"] + "patches/drum"
 }

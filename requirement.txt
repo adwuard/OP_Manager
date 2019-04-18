@@ -7,3 +7,4 @@ smbus2==0.2.3
 wifi==0.3.8
 wireless==0.3.2
 Adafruit-GPIO==1.0.3
+username==2.0.2

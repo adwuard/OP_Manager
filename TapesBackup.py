@@ -2,7 +2,7 @@ import os
 import shutil
 from config import config, savePaths
 from distutils.dir_util import copy_tree
-from file_util import forcedir, removeTree
+from file_util import forcedir, removeTree,copyfile
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -22,8 +22,8 @@ class TapeBackup:
         forcedir(newPath + "/album")
         forcedir(newPath + "/tape")
         try:
-            copy_tree(op1AlbumPath, newPath)
-            copy_tree(op1TapePath, newPath)
+            copy_tree(op1AlbumPath, newPath + "/album")
+            copy_tree(op1TapePath, newPath + "/tape")
         except:
             shutil.rmtree(newPath)
 
