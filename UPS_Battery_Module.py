@@ -3,7 +3,7 @@ import smbus2
 
 from config import config
 
-import Adafruit_ADS1x15
+#import Adafruit_ADS1x15
 
 
 
@@ -20,54 +20,54 @@ Avg Draw
 ====================== Estimate Battery Life =========================
 1000 mAh 0.5 A  Draw - 2 Hours
 1000 mAh 0.19 A  Draw - 5.2 Hours
-800 mAh 0.5 A  Draw - 1.6 Hours  
-800 mAh 0.19 A  Draw - 4.2 Hours  
-600 mAh 0.5 A  Draw - 1.2 Hours  
+800 mAh 0.5 A  Draw - 1.6 Hours
+800 mAh 0.19 A  Draw - 4.2 Hours
+600 mAh 0.5 A  Draw - 1.2 Hours
 600 mAh 0.19 A  Draw - 3.15 Hours
 ======================Actual Test========================
 1000mAh 0.5A MAX Draw OP-1 Plugged at all time 1h/25m/28s
 """
 
 def readVoltage():
-    if(config["OP_1_Mounted_Dir"] == "RaspiUPS"):
-        return readVoltageRaspiUPS()
+    #if(config["OP_1_Mounted_Dir"] == "RaspiUPS"):
+    return readVoltageRaspiUPS()
 
-    if(config["OP_1_Mounted_Dir"] == "ADS1115"):
-        return readVoltageADS1115()
+    #if(config["OP_1_Mounted_Dir"] == "ADS1115"):
+    #    return readVoltageADS1115()
 
-    return 4.2 #default max voltage
+    #return 4.2 #default max voltage
 
 
 def readCapacity():
-    if (config["OP_1_Mounted_Dir"] == "RaspiUPS"):
-        return readCapacityRaspiUPS()
+    #if (config["OP_1_Mounted_Dir"] == "RaspiUPS"):
+    return readCapacityRaspiUPS()
 
-    if (config["OP_1_Mounted_Dir"] == "ADS1115"):
-        return readCapacityADS1115()
+    #if (config["OP_1_Mounted_Dir"] == "ADS1115"):
+    #    return readCapacityADS1115()
 
-    return "100%"
+    #return "100%"
 
 
 #read voltage from
-def readVoltageADS1115():
-    adc = Adafruit_ADS1x15.ADS1115()
+#def readVoltageADS1115():
+#    adc = Adafruit_ADS1x15.ADS1115()
     # "This function reads the channel 0 voltage from the ADS1115"
-    GAIN = 2/3 # 0-6.14V
-    val = adc.read_adc(0, GAIN=1)
-    return val
+#    GAIN = 2/3 # 0-6.14V
+#    val = adc.read_adc(0, GAIN=1)
+#    return val
 
 
-def readCapacityADS1115():
+#def readCapacityADS1115():
     # "This function calculates the remaining batter capacity from the battery voltage read from the ADS1115"
-    voltage = readCapacityADS1115()
-    percentage = (voltage - LIPO_MIN_VOLTAGE) * (100 - 0) / (LIPO_MAX_VOLTAGE - LIPO_MIN_VOLTAGE) + 0 # MAPS THE VOLTAGE 4.2-3.6 to 0->100%
-    capacity = int(percentage)
-    if capacity >= FULL_BATT_PERCENTAGE:
-        return "FULL"
-    elif capacity < LOW_BATT_PERCENTAGE:
-        return "LOW"
-    else:
-        return str(capacity) + "%"
+#    voltage = readCapacityADS1115()
+#    percentage = (voltage - LIPO_MIN_VOLTAGE) * (100 - 0) / (LIPO_MAX_VOLTAGE - LIPO_MIN_VOLTAGE) + 0 # MAPS THE VOLTAGE 4.2-3.6 to 0->100%
+#    capacity = int(percentage)
+#    if capacity >= FULL_BATT_PERCENTAGE:
+#        return "FULL"
+#    elif capacity < LOW_BATT_PERCENTAGE:
+#        return "LOW"
+#    else:
+#        return str(capacity) + "%"
 
 
 def readVoltageRaspiUPS():
