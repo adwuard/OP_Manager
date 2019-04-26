@@ -10,17 +10,15 @@ config = {
     "OP_1_Mounted_Dir": "", # sda/m
     "LocalBackupPath": os.path.dirname(os.path.realpath(__file__))+"/OP_1_Backup_Library/",
 
-    "Max_Synth_Sampler_patches": 42,
-    "Max_Synth_Synthesis_patches": 100,
-    "Max_Drum_Patches": 42,
-    "DisplayLines": 5,
-    "TargetOp1MountDir":"/media/op1"
+    "Max_Synth_Sampler_patches": 42, "Max_Synth_Synthesis_patches": 100, "Max_Drum_Patches": 42,
+    "TargetOp1MountDir": "/media/op1",
+    "TargetOpZMountDir": "/media/opz"
 }
 
 # For System Use
 savePaths = {
     "OP_1_System_Path": config["OP_1_Mounted_Dir"],
-    # Local Backup Paths
+    # Local OP1 Backup Paths
     "Local_Dir": config["LocalBackupPath"],
     "Local_Projects": config["LocalBackupPath"] + "projects",
     "Local_Patches": config["LocalBackupPath"] + "patches",

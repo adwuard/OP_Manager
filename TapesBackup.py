@@ -3,7 +3,7 @@ import shutil
 from config import config, savePaths
 from distutils.dir_util import copy_tree
 
-from file_util import forcedir, removeTree,copyfile
+from file_util import forcedir, copyfile
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -23,8 +23,8 @@ class TapeBackup:
         forcedir(currentTimeFolder + "/album")
         forcedir(currentTimeFolder + "/tape")
         try:
-            copy_tree(op1AlbumPath, newPath + "/album")
-            copy_tree(op1TapePath, newPath + "/tape")
+            copy_tree(op1AlbumPath, currentTimeFolder + "/album")
+            copy_tree(op1TapePath, currentTimeFolder + "/tape")
         except:
             # Connection broken, remove created folder
             shutil.rmtree(currentTimeFolder)

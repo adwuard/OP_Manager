@@ -73,7 +73,7 @@ def displayPng(pathToImage):
 
 
 def getKeyStroke():
-    time.sleep(0.1)
+    time.sleep(1)
     try:
         while 1:
             if not GPIO.input(U_pin):
@@ -95,11 +95,14 @@ def getKeyStroke():
 
 
 def checkKeyInterrupt():
+    time.sleep(0.05)
     if not GPIO.input(U_pin):
         return "UP"
     if not GPIO.input(L_pin):
+        time.sleep(0.1)
         return "LEFT"
     if not GPIO.input(R_pin):
+        time.sleep(0.1)
         return "RIGHT"
     if not GPIO.input(D_pin):
         return "DOWN"

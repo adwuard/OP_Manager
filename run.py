@@ -8,8 +8,7 @@ from GPIO_Init import getKeyStroke, displayImage, getFont, checkKeyInterrupt
 from OP_1_Connection import do_mount,is_connected
 from file_util import createImportantFolders
 import time
-from Midi import startMidi
-
+from Midi import startMidi, usbMIDIOut
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -19,7 +18,7 @@ workDir = os.path.dirname(os.path.realpath(__file__))
 
 def start():
     createImportantFolders()
-    do_mount()
+    # do_mount()
     currentCursor = 1
     # Initialize Menu System
     pg = Menu_Page_Router.PageRouter()
@@ -72,7 +71,8 @@ if __name__ == "__main__":
 
     # ============================
     # need to
-    start()
+    # start()
+    usbMIDIOut()
     # server.terminate()
     # server.join()
 

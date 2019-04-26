@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw
 from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont, getAnyKeyEvent
 from OP_1_Connection import get_abbreviation, update_Current_Storage_Status, check_OP_1_Connection, analyzeAIF
 from config import config, savePaths
-from file_util import getDirFileList, fileTransferHelper, deleteHelper
+from file_util import fileTransferHelper, deleteHelper
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -18,7 +18,7 @@ workDir = os.path.dirname(os.path.realpath(__file__))
 class fileBrowser:
     def __init__(self, Dir):
         self.histQueue = [Dir]
-        self.currentDirLst = sorted(getDirFileList(Dir))
+        self.currentDirLst = sorted(os.listdir(Dir))
         self.currentDirPath = Dir
         self.prevDir = ""
         self.copyQueue = []
@@ -234,7 +234,6 @@ def renderRename(file=""):
                     pass
 
 
-
 def RenderOptionsMenu(lst, title="action"):
     """
     Renders items in given list, and return the string whatever user chooses
@@ -345,7 +344,7 @@ def renderFolders(path, upload_download, dest):
             # Render the AIF data from cursor landed item
             if "aif" in i and counter == currentCursor:
                 try:
-                    synType, FX, LFO = analyzeAIF(fb.structCurrentPath() + "/" + i)
+                    synType, FX, LFO = analyzeAIF(os.path.join(fb.structCurrentPath(), i))
                 except:
                     # AIF meta data not retrievable
                     synType, FX, LFO = "N/A", "N/A", "N/A"
@@ -410,6 +409,7 @@ def renderFolders(path, upload_download, dest):
             if len(fb.histQueue) > 1:
                 currentCursor = actualFilePointer = 1
                 availableSlots += len(fb.getCopyQueue())
+                selectedDisplay = []
                 fb.clearCopyQueue()
                 fb.prevPage()
             else:
@@ -473,9 +473,6 @@ def renderFolders(path, upload_download, dest):
                     fb.addToCopyQueue(currentFile)
                     # availableSlots += 1
                     rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
-
-                if rtn == "RETURN":
-                    availableSlots += fileCount
             else:
                 if fileCount == 1:
                     rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
@@ -483,8 +480,8 @@ def renderFolders(path, upload_download, dest):
                 else:
                     rtn = RenderOptionsMenu(
                         [upload_download + " " + str(fileCount) + " Patches", "Delete " + str(fileCount) + "Patches"])
-                if rtn == "RETURN":
-                    availableSlots += fileCount
+                # if rtn == "RETURN":
+                #     availableSlots += fileCount
 
             if "Upload" in rtn or "Backup" in rtn:
                 # List allowed
@@ -513,10 +510,10 @@ def renderFolders(path, upload_download, dest):
                 print(fb.getCopyQueue()[0])
                 renderRename(str(fb.getCopyQueue()[0]))
 
-            currentCursor = 1
-            actualFilePointer = 1
-            fb.clearCopyQueue()
-            selectedDisplay = []
+            # currentCursor = 1
+            # actualFilePointer = 1
+            # fb.clearCopyQueue()
+            # selectedDisplay = []
 
             # Update Remain Available Patches Here
         sampler, synth, drum = update_Current_Storage_Status()
