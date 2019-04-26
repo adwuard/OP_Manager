@@ -30,23 +30,23 @@ currentStorageStatus = {
 def is_connected():
     if usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["USB_PRODUCT"]) is not None:
         return True
-    else: 
+    else:
         return False
 
 
-#TODO ADD WHILE
+# TODO ADD WHILE
 def wait_for_connection():
-        if is_connected():
-            print("Connected!")
-        else:
-            print("not connected")
-        time.sleep(2)
+    if is_connected():
+        print("Connected!")
+    else:
+        print("not connected")
+    time.sleep(2)
 
 
-#mountdevice(config["OP_1_Mounted_Dir"],
+# mountdevice(config["OP_1_Mounted_Dir"],
 # Mounting FAT32 with user 
 def mountdevice(source, target):
-    print("mount device with !" + source + "! !" + target + "! !" + username() +"!")
+    print("mount device with !" + source + "! !" + target + "! !" + username() + "!")
 
     ret = os.system('sudo -E mount {} {}'.format(source, target))
     if ret not in (0, 8192):
@@ -63,12 +63,13 @@ def unmountdevice(target):
     print("unmount op1 finised")
 
 
-#get the system mount path - /dev/sda
+# get the system mount path - /dev/sda
 def getmountpath():
     o = os.popen('readlink -f /dev/disk/by-id/' + config["OP_1_USB_ID"]).read()
     return o.rstrip()
 
-#chekcs if the partiion is mounted if not it return ""
+
+# chekcs if the partiion is mounted if not it return ""
 def getMountPath():
     mountpath = getmountpath()
     # mountPoint = ""
@@ -83,7 +84,7 @@ def getMountPath():
 
 
 def is_mounted():
-    if(getMountPath() == ""):
+    if getMountPath() == "":
         return False
     else:
         return True
@@ -91,14 +92,13 @@ def is_mounted():
 
 def do_mount():
     wait_for_connection()
-    
-    if (not is_mounted()):
+    if not is_mounted():
         try:
             print("-- device not mounted")
             mountpath = getmountpath()
             config["USB_Mount_Path"] = mountpath
             create_mount_point()
-            mountdevice( config["USB_Mount_Path"],config["TargetOp1MountDir"])
+            mountdevice(config["USB_Mount_Path"], config["TargetOp1MountDir"])
         except:
             return False
         return True
@@ -107,15 +107,14 @@ def do_mount():
         return True
 
 
-
 def check_OP_1_Connection():
     if is_connected():
-
+        do_mount()
         return True
     else:
         connected = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(connected)
-        draw.text((30, 25), "Please Check Connection!", font=getFont(), fill='white')
+        draw.text((0, 25), "Please Check Connection!", font=getFont(), fill='white')
         displayImage(connected)
         config["USB_Mount_Path"] = ""
         config["OP_1_Mounted_Dir"] = ""
@@ -129,9 +128,7 @@ def unmount_OP_1():
         draw = ImageDraw.Draw(unmountDisplay)
         draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
         displayImage(unmountDisplay)
-
         unmountdevice(config["OP_1_Mounted_Dir"])
-
         config["OP_1_Mounted_Dir"] = ""
         config["USB_Mount_Path"] = ""
         unmountDisplay = Image.new('1', (128, 64))
@@ -149,18 +146,12 @@ def unmount_OP_1():
         return False
 
 
-
 def create_mount_point():
     try:
-         os.system("sudo mkdir -p " + config["TargetOp1MountDir"])
-         os.system("sudo chmod 0777 " + config["TargetOp1MountDir"])
+        os.system("sudo mkdir -p " + config["TargetOp1MountDir"])
+        os.system("sudo chmod 0777 " + config["TargetOp1MountDir"])
     except:
         print("error cant create mount point directory")
-
-
-
-
-
 
 
 def get_abbreviation(text):
@@ -180,6 +171,11 @@ def get_abbreviation(text):
 
 
 def getFileCount(startPath):
+    """
+    Given path to dir, and return the counts of .aif files and all child directory
+    :param startPath: path to folder
+    :return: int: total count of aif files
+    """
     filesCount = 0
     for root, dirs, files in os.walk(startPath):
         for f in files:
@@ -189,6 +185,11 @@ def getFileCount(startPath):
 
 
 def analyzeAIF(pathTOAIF):
+    """
+    path to the op1 AIF file extracting json format from the meta data and analyze patch type
+    :param pathTOAIF: path to OP1 aif file
+    :return: tuple of three strings (type, fx,lfo)
+    """
     with open(pathTOAIF, 'rb') as reader:
         file = str(reader.read())
     strBuilder = ""
@@ -197,34 +198,35 @@ def analyzeAIF(pathTOAIF):
         if i == "}":
             strBuilder += "}"
             break
-        if startflag: strBuilder += i
+        if startflag:
+            strBuilder += str(i)
         if not startflag and i == "{":
-            strBuilder += i
-            strBuilder = True
+            strBuilder += str(i)
+            startflag = True
     data = json.loads(strBuilder)
     return data.get("type").capitalize(), data.get("fx_type").capitalize(), data.get("lfo_type").capitalize()
 
 
-def checkOccupiedSlots(startPath):
-    patchType = ""
-    sampleEngine = []
-    synthEngine = []
-    drum = []
-    for root, dirs, files in os.walk(startPath):
-        for f in files:
-            currentFilePath = str(root) + "/" + f
-            if f.endswith('.aif') and not f.startswith("."):
-                try:
-                    patchType, fx, lfo = analyzeAIF(currentFilePath)
-                except:
-                    pass
-            if patchType == "Drum" or patchType == "Dbox" and "drum" in currentFilePath:
-                drum.append(currentFilePath)
-            elif patchType == "Sampler":
-                sampleEngine.append(currentFilePath)
-            else:
-                synthEngine.append(currentFilePath)
-    return [sampleEngine, synthEngine, drum]
+# def checkOccupiedSlots(startPath):
+#     patchType = ""
+#     sampleEngine = []
+#     synthEngine = []
+#     drum = []
+#     for root, dirs, files in os.walk(startPath):
+#         for f in files:
+#             currentFilePath = str(root) + "/" + f
+#             if f.endswith('.aif') and not f.startswith("."):
+#                 try:
+#                     patchType, fx, lfo = analyzeAIF(currentFilePath)
+#                 except:
+#                     pass
+#             if patchType == "Drum" or patchType == "Dbox" and "drum" in currentFilePath:
+#                 drum.append(currentFilePath)
+#             elif patchType == "Sampler":
+#                 sampleEngine.append(currentFilePath)
+#             else:
+#                 synthEngine.append(currentFilePath)
+#     return [sampleEngine, synthEngine, drum]
 
 
 def update_Current_Storage_Status():

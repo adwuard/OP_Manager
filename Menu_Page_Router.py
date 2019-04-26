@@ -8,7 +8,7 @@ from subprocess import call
 from PIL import Image, ImageDraw
 from smbus2 import smbus2
 from FileBrowser import renderFolders, RenderOptionsMenu, renderRename
-from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont
+from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
 from Midi import startMidi, usbMIDIOut
 from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount
 from TapesBackup import TapeBackup
@@ -24,18 +24,15 @@ __date__ = "2019-04-02"
 workDir = os.path.dirname(os.path.realpath(__file__))
 
 
-
-
 class PageRouter:
     pageQue = [MainPage]
     currentDist = []
     font = getFont()
     smallFont = getSmallFont()
-    
+
     def __init__(self):
         self.processState = False
         self.cursor = 1
-        self.cursorMax = 0
 
     def getListSize(self):
         return len(self.pageQue[-1])
@@ -45,9 +42,16 @@ class PageRouter:
         image = Image.new('1', frameSize)
         draw = ImageDraw.Draw(image)
         currentDist = self.pageQue[-1]
-        # Stay on same page (Up Down)
+        # Stay on same page (Up Down) Render Standard Menu
         if action == 0:
-            self.renderStandardMenu(draw, currentDist, cur)
+            draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
+            draw.rectangle([(0, 0), (128, 10)], 'white')
+            draw.text((2, 0), str(currentDist[0][0]), fill='black', font=self.font)
+            draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
+            for i in range(1, len(currentDist)):
+                draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=self.font)
+            draw.text((2, cur * 10), ">", fill='white', font=self.font)
+
         # Action Events (RIGHT)
         if action == 1:
             if type(currentDist[cur][1]) is str:
@@ -57,6 +61,7 @@ class PageRouter:
                 self.pageQue.append(currentDist[cur][1])
             self.renderPage(0, 1)
             return
+
         # Previous Page (Left)
         if action == -1:
             if len(self.pageQue) > 1:
@@ -69,16 +74,12 @@ class PageRouter:
         # =============Projects Actions ===========
         if event == "act_Backup_Project_From_OP_1":
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
-                image = Image.new('1', (128, 64))
-                image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
-                displayImage(image)
+                displayPng(workDir + "/Assets/Img/BackupProject.png")
                 time.sleep(0.1)
                 try:
                     tape = TapeBackup()
                     tape.copyToLocal()
-                    image = Image.new('1', (128, 64))
-                    image.paste(Image.open(workDir + "/Assets/Img/Done.png").convert("1"))
-                    displayImage(image)
+                    displayPng(workDir + "/Assets/Img/Done.png")
                     time.sleep(0.1)
                     getAnyKeyEvent()
                 except:
@@ -98,9 +99,9 @@ class PageRouter:
                     # temp = RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
                     if rtn == "Upload":
                         pass
-                    elif rtn== "Rename":
+                    elif rtn == "Rename":
                         renderRename(os.path.join(savePaths["Local_Projects"], temp))
-                    elif rtn== "Delete":
+                    elif rtn == "Delete":
                         deleteHelper([os.path.join(savePaths["Local_Projects"], temp)])
                     elif rtn == "RETURN":
                         pass
@@ -149,7 +150,7 @@ class PageRouter:
             except:
                 print("Error")
             self.renderPage(-1, 1)
-        
+
         # ============= MOUNT OPTION ==============
         if event == "act_ESC_Mount_OP_1":
             try:
@@ -179,18 +180,9 @@ class PageRouter:
                 draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
                 displayImage(image)
                 getAnyKeyEvent()  # Press any key to proceed
+            else:
+                print("Not Connected")
             self.renderPage(-1, 1)
-
-    def renderStandardMenu(self, draw, currentDist=None, cursor=1):
-        draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
-        draw.rectangle([(0, 0), (128, 10)], 'white')
-        draw.text((2, 0), str(currentDist[0][0]), fill='black', font=self.font)
-        draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
-        for i in range(1, len(currentDist)):
-            draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=self.font)
-        draw.text((2, cursor * 10), ">", fill='white', font=self.font)
-
-
 
     # Useful in "Are you sure to delete.", "Are you sure to rename"
     def renderConfirmation(self, message=""):

@@ -3,7 +3,6 @@ from os.path import abspath, join, pardir, basename, dirname
 from time import sleep
 from PIL import Image, ImageDraw
 from GPIO_Init import displayImage, getAnyKeyEvent, getFont
-from config import config,savePaths
 import os
 import time
 from os.path import abspath, join, pardir, basename, dirname, isdir
@@ -163,6 +162,7 @@ def deleteHelper(srclist):
 
 
 def createImportantFolders():
+    from config import savePaths
     forcedir(savePaths["Local_Dir"])
     forcedir(savePaths["Local_Projects"])
     forcedir(savePaths["Local_Patches"])

@@ -1,6 +1,6 @@
-SSHPage = [
-    ["SSH", -1],
-    ["Start SSH Transfer", "Open SSH"]
+WifiTransfer = [
+    ["Wifi Transfer", -1],
+    ["Start Server", "Open SSH"]
     # "Connect", -1
 ]
 
@@ -14,9 +14,7 @@ MIDI =[
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
-    ["Remove All User Data", "Remove all Data"],
-    ["Mount OP1", "act_ESC_Mount_OP_1"],
-    ["Eject OP-1", "act_ESC_Eject_OP_1"]
+    ["Mount/Eject OP-1", "act_ESC_Mount_OP_1"],
     ["MIDI Host", MIDI],
     ["Power Off System", "act_POWER_OFF"],
 ]
@@ -65,11 +63,22 @@ ProjectsPage = [
     ["Local Projects", "act_Load_Project_From_Local"]
 ]
 
+
+OP1 = [
+    ["OP-1", -1],
+    ["Projects", ProjectsPage],
+    ["Patches", PatchesPage]
+]
+
+OPZ = [
+    ["OP-Z", -1]
+]
+
 MainPage = [
     ["Main Menu", -1],
-    ["Projects", ProjectsPage],
-    ["Patches", PatchesPage],
-    ["SSH Transfer", SSHPage],
+    ["OP-1", OP1],
+    ["OP-Z", OPZ],
+    ["Wifi Transfer", WifiTransfer],
     ["Utilities", Utilities],
 ]
 
