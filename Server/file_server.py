@@ -1,7 +1,7 @@
-import urllib
-from urllib.parse import unquote
+#import urllib3
+#from urllib.parse import quote
 
-from flask import Flask, make_response, request, session, render_template, send_file, Response
+from flask import Flask, make_response, request, session, render_template, send_file, Response,redirect
 from flask.views import MethodView
 from werkzeug import secure_filename
 from datetime import datetime
@@ -11,13 +11,18 @@ import re
 import stat
 import json
 import mimetypes
-
+import shutil
+#from config import config
 app = Flask(__name__, static_url_path='/assets', static_folder='assets')
-# root = os.path.expanduser('/home/pi/Desktop/OP1_File_Organizer/OP_1_Backup_Library')
-root = os.path.expanduser('~')
+root = os.path.expanduser('/home/marcel/Desktop/OP1_File_Organizer/OP_1_Backup_Library')
+path = ""#inside the backup folder
 
-ignored = ['.bzr', '$RECYCLE.BIN', '.DAV', '.DS_Store', '.git', '.hg', '.htaccess', '.htpasswd', '.Spotlight-V100',
-           '.svn', '__MACOSX', 'ehthumbs.db', 'robots.txt', 'Thumbs.db', 'thumbs.tps']
+
+
+#root = os.path.expanduser('~')
+
+ignored = ['^.bzr$', '^$RECYCLE.BIN$', '^.DAV$', '^.DS_Store$', '^.git$', '^.hg$', '^.htaccess$', '^.htpasswd$', '^.Spotlight-V100$',
+           '^.svn$', '^__MACOSX$', '^ehthumbs.db$', '^robots.txt$', '^Thumbs.db$', '^thumbs.tps$']
 datatypes = {'audio': 'm4a,mp3,oga,ogg,webma,wav, aif', 'archive': '7z,zip,rar,gz,tar',
              'image': 'gif,ico,jpe,jpeg,jpg,png,svg,webp', 'pdf': 'pdf', 'quicktime': '3g2,3gp,3gp2,3gpp,mov,qt',
              'source': 'atom,bat,bash,c,cmd,coffee,css,hml,js,json,java,less,markdown,md,php,pl,py,rb,rss,sass,scpt,swift,scss,sh,xml,yml,plist',
@@ -29,9 +34,57 @@ icontypes = {'fa-music': 'm4a,mp3,oga,ogg,webma,wav', 'fa-archive': '7z,zip,rar,
              'fa-file-text-o': 'txt', 'fa-film': 'mp4,m4v,ogv,webm', 'fa-globe': 'htm,html,mhtm,mhtml,xhtm,xhtml'}
 
 
+
+@app.route('/')
+def base_redirect():
+    return redirect("/index.html", code=302)
+
+@app.route('/index.html')
+def index(name=None):
+    files = folders = []
+    content = []
+    for _, dirnames, filenames in os.walk(root+ "/"+path):
+        folders = dirnames
+        files = filenames
+        break #TODO MAKE SIMPLER GOOD IF YOU WANT TO USE A TREE VIEW
+
+    for f in folders:
+        is_blacklisted = False
+        for ig in ignored:
+            if re.search(ig,str(f)):
+                is_blacklisted = True
+        if is_blacklisted:
+            continue
+        content.append({'type':'dir', 'name':f, 'mtime':os.stat(root+"/"+f).st_mtime})
+
+    for f in files:
+        is_blacklisted = False
+        for ig in ignored:
+            if re.search(ig, str(f)):
+                is_blacklisted = True
+        if is_blacklisted:
+            continue
+        content.append({'type':'file', 'name':f, 'mtime':os.stat(root+"/"+f).st_mtime,'size':os.stat(root+"/"+f).st_size})
+
+    return render_template('index.html', name=name, path=path, total={'dir':len(folders),'file':len(files),'sum':len(files+folders)},contents=content)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return redirect("/", code=404)
+
+
+
+
+
+
 @app.template_filter('size_fmt')
 def size_fmt(size):
-    return humanize.naturalsize(size)
+    try:
+        tmp = int(size)
+        return humanize.naturalsize(int(size))
+    except NameError:
+        return 0
+
 
 
 @app.template_filter('time_fmt')
@@ -74,34 +127,41 @@ def createFolder(path, folderName):
     return "Done"
 
 
-@app.route("/<path_1>/deleteFolder/<name_1>")
-def deleteFolder(path_1, name_1):
-    print(path_1, name_1)
-    path = os.path.join(root, path_1)
-    path = path + "/" + name_1
-    path = unquote(path)
+@app.route("/deleteFolder/<folder_to_delete>")
+def deleteFolder(folder_to_delete):
+    #TODO ESCAPE STRING
+    path = os.path.join(root, folder_to_delete)
+
+    print path
+
+    if not os.path.isdir(path):
+        return json.dumps({'err': 'err','reason':'folder not exists or path is no folder'})#
+
     try:
-        pass
-        os.mkdir(path + "/" + "Hi")
-    except OSError:
-        print("Creation of the directory %s failed" % path)
-    else:
-        print("Successfully created the directory %s " % path)
-    return "Done"
+        clear_folder(path)
+        os.rmdir(path)
+
+    except Exception as e:
+        return json.dumps({'err': 'err','reason':e})
+
+    return json.dumps({'err':'ok'})
 
 
-@app.route("/<path_2>/deleteFile/<name_2>")
-def deleteFile(path_2, name_2):
-    path = os.path.join(root, path_2)
-    path = path + "/" + name_2
-    path = unquote(path)
+@app.route("/deleteFile/<file_to_delete>")
+def deleteFile(file_to_delete):
+    path = os.path.join(root, file_to_delete)
+    # TODO ESCAPE STRING
+    print path
+
+    if not os.path.isfile(path):
+        return json.dumps({'err': 'err', 'reason': 'folder not exists or path is not a folder'})  #
+
     try:
-        os.mkdir(path + "/" + "Hi")
-    except OSError:
-        print("Creation of the directory %s failed" % path)
-    else:
-        print("Successfully created the directory %s " % path)
-    return "Done"
+        os.remove(path)
+    except Exception as e:
+        return json.dumps({'err': 'err', 'reason': e})
+
+    return json.dumps({'err': 'ok'})
 
 
 @app.template_filter('humanize')
@@ -116,6 +176,19 @@ def get_type(mode):
     else:
         type = 'file'
     return type
+
+def clear_folder(dir):
+    if os.path.exists(dir):
+        for the_file in os.listdir(dir):
+            file_path = os.path.join(dir, the_file)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+                else:
+                    clear_folder(file_path)
+                    os.rmdir(file_path)
+            except Exception as e:
+                print(e)
 
 
 def partial_response(path, start, end=None):

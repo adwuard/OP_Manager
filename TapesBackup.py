@@ -14,8 +14,8 @@ class TapeBackup:
     def getTime(self):
         import datetime
         currentDT = datetime.datetime.now()
-        return str(currentDT.year) + "_" + str(currentDT.month) + "_" + str(currentDT.day) + "_" + str(
-            currentDT.hour) + "_" + str(currentDT.minute) + "_" + str(currentDT.second)
+        return str(currentDT.year) + str(currentDT.month) + str(currentDT.day) +"_" +str(
+            currentDT.hour) + str(currentDT.minute)  + str(currentDT.second)
 
     def copyToLocal(self):
         op1TapePath, op1AlbumPath = config["OP_1_Mounted_Dir"] + "/tape", config["OP_1_Mounted_Dir"] + "/album"
