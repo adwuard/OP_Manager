@@ -1,3 +1,5 @@
+#### Will be coming back to this project next week.
+
 # OP1_File_Organizer
 Common issues from the OP-1 users is that OP-1 doesn't support projects and the unit only allow certain amount of patches.
 I am currently developing a compact hardware tool that can easily swap and backup all the user patches and projects. This unit can benifet for users who don't want to connect their OP-1 to their computer. Or performers who wants to switch patches, and projects on the go. And allows the user to store all their OP-1 files in one place and store as much patches as whatever the SD card's capacity is available. The device will be low cost and compact.
