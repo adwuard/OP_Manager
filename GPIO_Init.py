@@ -1,6 +1,5 @@
 import os
 import time
-
 import RPi.GPIO as GPIO
 import SSD1306
 from PIL import ImageFont, Image
@@ -73,7 +72,7 @@ def displayPng(pathToImage):
 
 
 def getKeyStroke():
-    time.sleep(1)
+    time.sleep(0.05)
     try:
         while 1:
             if not GPIO.input(U_pin):
@@ -85,10 +84,13 @@ def getKeyStroke():
             if not GPIO.input(D_pin):
                 return "DOWN"
             if not GPIO.input(C_pin):
+                time.sleep(0.2)
                 return "CENTER"
             if not GPIO.input(A_pin):
+                time.sleep(0.2)
                 return "A"
             if not GPIO.input(B_pin):
+                time.sleep(0.2)
                 return "B"
     except KeyboardInterrupt:
         GPIO.cleanup()
@@ -107,6 +109,7 @@ def checkKeyInterrupt():
     if not GPIO.input(D_pin):
         return "DOWN"
     if not GPIO.input(C_pin):
+        time.sleep(0.2)
         return "CENTER"
     if not GPIO.input(A_pin):
         return "A"

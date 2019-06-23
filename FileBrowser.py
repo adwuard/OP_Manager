@@ -302,17 +302,17 @@ def renderFolders(path, upload_download, dest):
     selectedDisplay = []
 
     fb = fileBrowser(path)
-
-    sampler, synth, drum = update_Current_Storage_Status()
-
-    if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
-        # Display synth and Sample Available
-        availableSlots = config["Max_Synth_Synthesis_patches"] + config["Max_Synth_Sampler_patches"] - (synth + sampler)
-    else:
-        availableSlots = config["Max_Drum_Patches"] - drum
-
     # RenderFolders
     while True:
+        sampler, synth, drum = update_Current_Storage_Status()
+
+        if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
+            # Display synth and Sample Available
+            availableSlots = config["Max_Synth_Synthesis_patches"] + config["Max_Synth_Sampler_patches"] - (
+                        synth + sampler)
+        else:
+            availableSlots = config["Max_Drum_Patches"] - drum
+
         image = Image.new('1', (128, 64))
 
         image.paste(Image.open(workDir + "/Assets/Img/FileBrowser.png").convert("1"))
@@ -509,6 +509,8 @@ def renderFolders(path, upload_download, dest):
                 # Rename Page
                 print(fb.getCopyQueue()[0])
                 renderRename(str(fb.getCopyQueue()[0]))
+                fb.updatePage()
+
 
             # currentCursor = 1
             # actualFilePointer = 1

@@ -7,8 +7,8 @@ WifiTransfer = [
 
 MIDI =[
     ["MIDI", -1],
-    ["USB MIDI IN Test", "USB_MIDI_In_Test"],
-    ["USB MIDI OUT Test", "USB_MIDI_Out_Test"]
+    ["USB MIDI IN Test", "MIDI_In_Test"],
+    ["USB MIDI OUT Test", "MIDI_Out_Test"]
 ]
 
 Utilities = [
@@ -45,22 +45,22 @@ OP_1_Patches = [
 ]
 
 PatchesPage = [
-    ["Manage Patches", -1],
-    ["Backup Patches", "act_5_Backup_All_Patches"],
-    ["Local Patches", Local_Patches],
-    ["Manage OP-1 Patches", OP_1_Patches]
+    ["Patches", -1],
+    ["Backup", "act_5_Backup_All_Patches"],
+    ["Manage Local", Local_Patches],
+    ["Manage OP-1", OP_1_Patches]
 ]
 
 BackupPage =[
-    ["Backup Projects", -1],
-    ["Backup tracks + album", "act_Backup_Project_From_OP_1"],
-    ["Backup tracks", "act_Load_Project_From_Local_only_tracks"]
+    ["Backup", -1],
+    ["Tracks + Album", "act_Backup_Project_From_OP_1"],
+    ["Tracks", "act_Load_Project_From_Local_only_tracks"]
 ]
 
 ProjectsPage = [
-    ["Manage Projects", -1],
-    ["Backup Project", BackupPage],
-    ["Local Projects", "act_Load_Project_From_Local"]
+    ["Projects", -1],
+    ["Backup", BackupPage],
+    ["Manage Local", "act_Load_Project_From_Local"]
 ]
 
 
@@ -70,8 +70,11 @@ OP1 = [
     ["Patches", PatchesPage]
 ]
 
+
 OPZ = [
     ["OP-Z", -1]
+    # ["Backup Project", "act_"],
+    # ["Local Projects", "act_Load_Project_From_Local"]
 ]
 
 MainPage = [

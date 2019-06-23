@@ -35,11 +35,12 @@ def copytree(src, dst, symlinks=False, ignore=shutil.ignore_patterns('.*', '_*')
         else:
             shutil.copy2(s, d)
 
-def copyfile(src,dst, with_remove = False):
-    print("copy " + src + " to " + dst)
-    shutil.copy(src,dst)
 
-    if(with_remove):
+def copyfile(src, dst, with_remove=False):
+    print("copy " + src + " to " + dst)
+    shutil.copy(src, dst)
+
+    if (with_remove):
         os.remove(src)
 
 
@@ -71,6 +72,7 @@ def copyListOfDirs(lst, target_Dir):
         forcedir(target_Dir + "/" + foldername)
         copytree(i, target_Dir + "/" + foldername)
 
+
 # =======================List Files======================
 def get_visible_folders(dirPath=""):
     """
@@ -90,20 +92,17 @@ def getDirFileList(d):
     return list(filter(lambda x: x[0] != '.', os.listdir(d)))
 
 
-
 def fileTransferHelper(srclist, dest):
     """
-    Pass in list of paths to file, and a copy root destination
-    It will create patch's parent folder if now already exist in the destination folder
+    Pass in list of paths to file, and copy to root destination
+    It will create patch's parent folder if not already exist in the destination folder
     For example:
         fileTransferHelper(["..../OP1_File_Organizer/NotUsed/..../patch.aif"], dest = "/..../synth")
 
     :param srclist: ["pwd/1.aif", "pwd/2.aif", "pwd/3.aif",....., "pwd/n.aif"]
-    :param dest: Root of the destination folder
+    :param dest: Root of the synth and drum destination folder
     :return: NA
     """
-
-
 
     for i in srclist:
         srcParentFolderName = abspath(join(i, pardir)).split("/")[-1:][0]
@@ -144,21 +143,38 @@ def deleteHelper(srclist):
     """
     displayPng(workDir + "/Assets/Img/Deleting.png")
     time.sleep(0.2)
-    for i in srclist:
-        if isdir(i):
+    for f in srclist:
+        if isdir(f):
             # If given element in a list is a directory
             shutil.rmtree(srclist[0])
         else:
-            folder = dirname(i)
-            if os.path.exists(i):
+            folder = dirname(f)
+            if os.path.exists(f):
                 # Check for file existence
-                os.remove(i)
+                os.remove(f)
             if len(os.listdir(folder)) == 0:
                 # If nothing is in the folder, remove the parent folder
                 os.rmdir(folder)
     displayPng(workDir + "/Assets/Img/Done.png")
     getAnyKeyEvent()  # Press any key to proceed
     return
+
+def recursive_overwrite(src, dest, ignore=None):
+    if os.path.isdir(src):
+        if not os.path.isdir(dest):
+            os.makedirs(dest)
+        files = os.listdir(src)
+        if ignore is not None:
+            ignored = ignore(src, files)
+        else:
+            ignored = set()
+        for f in files:
+            if f not in ignored:
+                recursive_overwrite(os.path.join(src, f),
+                                    os.path.join(dest, f),
+                                    ignore)
+    else:
+        shutil.copyfile(src, dest)
 
 
 def createImportantFolders():
@@ -168,4 +184,3 @@ def createImportantFolders():
     forcedir(savePaths["Local_Patches"])
     forcedir(savePaths["Local_Synth"])
     forcedir(savePaths["Local_Drum"])
-

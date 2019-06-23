@@ -11,8 +11,8 @@ from FileBrowser import renderFolders, RenderOptionsMenu, renderRename
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
 from Midi import startMidi, usbMIDIOut
 from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount
-from TapesBackup import TapeBackup
-from UPS_Battery_Module import readCapacity
+from OP_1_Backup import OP1Backup
+from UPS_Battery_Module import readCapacity, getBatteryImagePath
 from file_util import getDirFileList, deleteHelper
 from menu_structure import MainPage
 from config import config, savePaths
@@ -40,6 +40,9 @@ class PageRouter:
     def renderPage(self, action, cur):
         frameSize = (128, 64)
         image = Image.new('1', frameSize)
+        # Battery Icon
+
+
         draw = ImageDraw.Draw(image)
         currentDist = self.pageQue[-1]
         # Stay on same page (Up Down) Render Standard Menu
@@ -47,7 +50,14 @@ class PageRouter:
             draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
             draw.rectangle([(0, 0), (128, 10)], 'white')
             draw.text((2, 0), str(currentDist[0][0]), fill='black', font=self.font)
-            draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
+
+            # Battery Level in percentage
+            # draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
+
+            # Battery Level Icon
+            icon = Image.open(os.path.join(workDir, getBatteryImagePath(readCapacity()))).convert("1")
+            image.paste(icon, (117, 0))
+
             for i in range(1, len(currentDist)):
                 draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=self.font)
             draw.text((2, cur * 10), ">", fill='white', font=self.font)
@@ -77,8 +87,24 @@ class PageRouter:
                 displayPng(workDir + "/Assets/Img/BackupProject.png")
                 time.sleep(0.1)
                 try:
-                    tape = TapeBackup()
+
+                    tape = OP1Backup()
                     tape.copyToLocal()
+                    displayPng(workDir + "/Assets/Img/Done.png")
+                    time.sleep(0.1)
+                    getAnyKeyEvent()
+                except:
+                    print("File Transfer Error")
+                    self.renderErrorMessagePage("File Transfer Error")
+            self.renderPage(-1, 1)
+
+        if event == "act_Load_Project_From_Local_only_tracks":
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                displayPng(workDir + "/Assets/Img/BackupProject.png")
+                time.sleep(0.1)
+                try:
+                    tape = OP1Backup()
+                    tape.copyOnlyTapesToLocal()
                     displayPng(workDir + "/Assets/Img/Done.png")
                     time.sleep(0.1)
                     getAnyKeyEvent()
@@ -94,11 +120,18 @@ class PageRouter:
                 if temp == "RETURN":
                     break
                 else:
-                    # while rtn == "RETURN":
                     rtn = RenderOptionsMenu(["Upload", "Rename", "Delete"])
-                    # temp = RenderOptionsMenu(getDirFileList(savePaths["Local_Projects"]), "Projects")
                     if rtn == "Upload":
-                        pass
+                        if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                            displayPng(workDir + "/Assets/Img/UploadingProject.png")
+                            time.sleep(0.1)
+                            try:
+                                tape = OP1Backup()
+                                tape.loadProjectToOP1(os.path.join(savePaths["Local_Projects"], temp))
+                            except:
+                                print("File Transfer Error")
+                                self.renderErrorMessagePage("File Transfer Error")
+
                     elif rtn == "Rename":
                         renderRename(os.path.join(savePaths["Local_Projects"], temp))
                     elif rtn == "Delete":
@@ -128,10 +161,21 @@ class PageRouter:
             self.renderPage(-1, 1)
 
         if event == "act_5_Backup_All_Patches":
-            image = Image.new('1', (128, 64))
-            image.paste(Image.open(workDir + "/Assets/Img/BackupProject.png").convert("1"))
-            displayImage(image)
-            time.sleep(0.1)
+            if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                image = Image.new('1', (128, 64))
+                image.paste(Image.open(workDir + "/Assets/Img/DownloadPatches.png").convert("1"))
+                displayImage(image)
+                time.sleep(0.1)
+                try:
+                    bk = OP1Backup()
+                    bk.backupOP1Patches()
+
+                    displayPng(workDir + "/Assets/Img/Done.png")
+                    time.sleep(0.1)
+                    getAnyKeyEvent()
+                except:
+                    print("File Transfer Error")
+                    self.renderErrorMessagePage("File Transfer Error")
             self.renderPage(-1, 1)
 
         if event == "USB_MIDI_In_Test":
@@ -198,3 +242,4 @@ class PageRouter:
         :param errorMessage: String message you want to display on the screen
         :return: N/A
         """
+        pass

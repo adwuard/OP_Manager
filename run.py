@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw
 import Menu_Page_Router
 
 from GPIO_Init import getKeyStroke, displayImage, getFont, checkKeyInterrupt
-from OP_1_Connection import do_mount,is_connected
+from OP_1_Connection import do_mount, is_connected
 from file_util import createImportantFolders
 import time
 from Midi import startMidi, usbMIDIOut
@@ -25,10 +25,10 @@ def start():
     # Start First Page
     pg.renderPage(0, currentCursor)
 
-    while 1:         
+    while 1:
 
         key = checkKeyInterrupt()
-        
+
         if key == "UP":
             if currentCursor - 1 >= 1:
                 currentCursor -= 1
@@ -56,12 +56,9 @@ def start():
         elif key == "A":
             pass
 
-        elif key =="":
-            #Update Screen
-            pg.renderPage(0, currentCursor)
-
         else:
-            raise ("Log: Key ", key, "Not recognized")
+            # Update Screen
+            pg.renderPage(0, currentCursor)
 
 
 if __name__ == "__main__":
@@ -70,13 +67,8 @@ if __name__ == "__main__":
     # server.start()
 
     # ============================
-    # need to
-    # start()
-    usbMIDIOut()
+    start()
+    # usbMIDIOut()
+
     # server.terminate()
     # server.join()
-
-    # while True:
-    #     print("\nStarting " + filename)
-    #     p = Popen("python " + filename, shell=True)
-    # p.wait()

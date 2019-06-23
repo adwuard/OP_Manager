@@ -1,17 +1,19 @@
 import struct
+from math import floor
+from os.path import join
+
 import smbus2
 
+from FileBrowser import scale
 from config import config
 
-#import Adafruit_ADS1x15
-
-
-
+# import Adafruit_ADS1x15
 LIPO_MIN_VOLTAGE = 3.6
 LIPO_MAX_VOLTAGE = 4.2
 
 FULL_BATT_PERCENTAGE = 97
 LOW_BATT_PERCENTAGE = 5
+
 """
 Avg Draw
 0.12 A @ Idele
@@ -28,37 +30,41 @@ Avg Draw
 1000mAh 0.5A MAX Draw OP-1 Plugged at all time 1h/25m/28s
 """
 
+
 def readVoltage():
-    #if(config["OP_1_Mounted_Dir"] == "RaspiUPS"):
+    # if(config["OP_1_Mounted_Dir"] == "RaspiUPS"):
     return readVoltageRaspiUPS()
 
-    #if(config["OP_1_Mounted_Dir"] == "ADS1115"):
+    # if(config["OP_1_Mounted_Dir"] == "ADS1115"):
     #    return readVoltageADS1115()
 
-    #return 4.2 #default max voltage
+    # return 4.2 #default max voltage
 
 
 def readCapacity():
-    #if (config["OP_1_Mounted_Dir"] == "RaspiUPS"):
+    # if (config["OP_1_Mounted_Dir"] == "RaspiUPS"):
     return readCapacityRaspiUPS()
 
-    #if (config["OP_1_Mounted_Dir"] == "ADS1115"):
+    # if (config["OP_1_Mounted_Dir"] == "ADS1115"):
     #    return readCapacityADS1115()
 
-    #return "100%"
+    # return "100%"
 
 
-#read voltage from
-#def readVoltageADS1115():
+# =============================For ADS1115 ADC voltage reading =============================
+# Not supported yet
+
+# read voltage from
+# def readVoltageADS1115():
 #    adc = Adafruit_ADS1x15.ADS1115()
-    # "This function reads the channel 0 voltage from the ADS1115"
+# "This function reads the channel 0 voltage from the ADS1115"
 #    GAIN = 2/3 # 0-6.14V
 #    val = adc.read_adc(0, GAIN=1)
 #    return val
 
 
-#def readCapacityADS1115():
-    # "This function calculates the remaining batter capacity from the battery voltage read from the ADS1115"
+# def readCapacityADS1115():
+# "This function calculates the remaining batter capacity from the battery voltage read from the ADS1115"
 #    voltage = readCapacityADS1115()
 #    percentage = (voltage - LIPO_MIN_VOLTAGE) * (100 - 0) / (LIPO_MAX_VOLTAGE - LIPO_MIN_VOLTAGE) + 0 # MAPS THE VOLTAGE 4.2-3.6 to 0->100%
 #    capacity = int(percentage)
@@ -70,6 +76,12 @@ def readCapacity():
 #        return str(capacity) + "%"
 
 
+def getBatteryImagePath(percentage):
+    ImageFolder = "Assets/Img/battery/ST_1"
+    return join(ImageFolder, str(int(floor(percentage * 0.1))) + ".png")
+
+
+# ============================= For UPS-Lite Battery Module =============================
 def readVoltageRaspiUPS():
     # "This function returns as float the voltage from the Raspi UPS Hat via the provided SMBus object"
     bus = smbus2.SMBus(1)
@@ -89,11 +101,12 @@ def readCapacityRaspiUPS():
     bus.close()
     swapped = struct.unpack("<H", struct.pack(">H", read))[0]
     capacity = swapped / 256
-    capacity = int(capacity * 1.1)
+    capacity = int(capacity)
 
-    if capacity >= FULL_BATT_PERCENTAGE:
-        return "FULL"
-    elif capacity < LOW_BATT_PERCENTAGE:
-        return "LOW"
-    else:
-        return str(capacity) + "%"
+    # if capacity >= FULL_BATT_PERCENTAGE:
+    #     return "FULL"
+    # elif capacity < LOW_BATT_PERCENTAGE:
+    #     return "LOW"
+    # else:
+    #     return str(capacity) + "%"
+    return capacity

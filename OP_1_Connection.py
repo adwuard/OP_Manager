@@ -5,7 +5,6 @@ import usb.util
 import usb.core
 from PIL import ImageDraw, Image
 from psutil import disk_partitions
-import username
 from GPIO_Init import displayImage, getFont
 from config import config, savePaths
 
@@ -108,13 +107,28 @@ def do_mount():
 
 
 def check_OP_1_Connection():
+    # if config["USB_Mount_Path"] == "":
+    #     image = Image.new('1', (128, 64))
+    #     image.paste(Image.open(workDir + "/Assets/Img/ConnectOP_1.png").convert("1"))
+    #     displayImage(image)
+
+    connected = Image.new('1', (128, 64))
+    draw = ImageDraw.Draw(connected)
+    draw.text((0, 25), "Connecting.....", font=getFont(), fill='white')
+    displayImage(connected)
+
     if is_connected():
         do_mount()
+        connected = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(connected)
+        draw.text((0, 25), "Connected", font=getFont(), fill='white')
+        displayImage(connected)
+
         return True
     else:
         connected = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(connected)
-        draw.text((0, 25), "Please Check Connection!", font=getFont(), fill='white')
+        draw.text((0, 25), "No Connection!", font=getFont(), fill='white')
         displayImage(connected)
         config["USB_Mount_Path"] = ""
         config["OP_1_Mounted_Dir"] = ""
