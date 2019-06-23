@@ -1,3 +1,22 @@
+## New Added Features  
+=====Patches=====  
+Backup Patches -------- Backup all the new patches to local library   
+Upload Patches/Packs -- Upload patches from local library. It can be singe patch or multiple  
+Rename Patch Name ----- Be able to change patch name  
+====Projects=====  
+Rename Project -------- Be able to change project name  
+Backup Project -------- Backing up all the project files to local library  
+Upload Project -------- Overwrite current project on the OP-1  
+  
+====Others=====  
+New Battery Level Indicator  
+Other minor bug fixes  
+Oh, and I got a new OP-Z, trying to figure out how to incorporate with this project :) 
+
+
+
+
+
 # OP1_File_Organizer
 Common issues from the OP-1 users is that OP-1 doesn't support projects and the unit only allow certain amount of patches.
 I am currently developing a compact hardware tool that can easily swap and backup all the user patches and projects. This unit can benifet for users who don't want to connect their OP-1 to their computer. Or performers who wants to switch patches, and projects on the go. And allows the user to store all their OP-1 files in one place and store as much patches as whatever the SD card's capacity is available. The device will be low cost and compact.
@@ -41,3 +60,8 @@ Fill this form if you are interested buying one [Buy Request Form](https://docs.
 * 4000mAh 3.7V Lipo Chell + BMS
 
 <img src="/documentation/IMG_9550.JPG" data-canonical-src="/documentation/IMG_9550.JPG" width="600" />
+
+
+
+## Credit
+[RBEGamer](https://github.com/RBEGamer), Code review, and server host
