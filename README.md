@@ -1,4 +1,21 @@
-#### Will be coming back to this project next week.
+## New Added Features  
+=====Patches=====  
+Backup Patches -------- Backup all the new patches to local library   
+Upload Patches/Packs -- Upload patches from local library. It can be singe patch or multiple  
+Rename Patch Name ----- Be able to change patch name  
+====Projects=====  
+Rename Project -------- Be able to change project name  
+Backup Project -------- Backing up all the project files to local library  
+Upload Project -------- Overwrite current project on the OP-1  
+  
+====Others=====  
+New Battery Level Indicator  
+Other minor bug fixes  
+Oh, and I got a new OP-Z, trying to figure out how to incorporate with this project :) 
+
+
+
+
 
 # OP1_File_Organizer
 Common issues from the OP-1 users is that OP-1 doesn't support projects and the unit only allow certain amount of patches.
