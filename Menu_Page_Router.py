@@ -1,22 +1,20 @@
 import os
 import subprocess
 import time
-from os.path import basename, isdir
-from shutil import rmtree
 from subprocess import call
-
 from PIL import Image, ImageDraw
-from smbus2 import smbus2
-from FileBrowser import renderFolders, RenderOptionsMenu, renderRename
+
+from Midi import MidiTool
+from SSH_Service import SSH_Service
+from FileBrowser import renderFolders, RenderOptionsMenu, renderRename, renderOPZFolder
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
-from Midi import startMidi, usbMIDIOut
-from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount
+from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount, \
+    check_OP_Z_Connection
 from OP_1_Backup import OP1Backup
 from UPS_Battery_Module import readCapacity, getBatteryImagePath
 from file_util import getDirFileList, deleteHelper
 from menu_structure import MainPage
-from config import config, savePaths
-from run import start
+from config import config, savePaths, batteryConfig
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -27,6 +25,7 @@ workDir = os.path.dirname(os.path.realpath(__file__))
 class PageRouter:
     pageQue = [MainPage]
     currentDist = []
+    cursorHistory = []
     font = getFont()
     smallFont = getSmallFont()
 
@@ -42,7 +41,6 @@ class PageRouter:
         image = Image.new('1', frameSize)
         # Battery Icon
 
-
         draw = ImageDraw.Draw(image)
         currentDist = self.pageQue[-1]
         # Stay on same page (Up Down) Render Standard Menu
@@ -51,12 +49,12 @@ class PageRouter:
             draw.rectangle([(0, 0), (128, 10)], 'white')
             draw.text((2, 0), str(currentDist[0][0]), fill='black', font=self.font)
 
-            # Battery Level in percentage
-            # draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
-
-            # Battery Level Icon
-            icon = Image.open(os.path.join(workDir, getBatteryImagePath(readCapacity()))).convert("1")
-            image.paste(icon, (117, 0))
+            if batteryConfig["enable"]:
+                # Battery Level in percentage
+                # draw.text((105, 0), readCapacity(), fill='black', font=self.smallFont)
+                # Battery Level Icon
+                icon = Image.open(os.path.join(workDir, getBatteryImagePath(readCapacity()))).convert("1")
+                image.paste(icon, (117, 0))
 
             for i in range(1, len(currentDist)):
                 draw.text((10, i * 10), str(currentDist[i][0]), fill='white', font=self.font)
@@ -66,9 +64,11 @@ class PageRouter:
         if action == 1:
             if type(currentDist[cur][1]) is str:
                 self.pageQue.append(["Action Page Route", -1])
+                self.cursorHistory.append(cur)
                 self.actionRouter(currentDist[cur][1])
             else:
                 self.pageQue.append(currentDist[cur][1])
+                self.cursorHistory.append(cur)
             self.renderPage(0, 1)
             return
 
@@ -76,8 +76,10 @@ class PageRouter:
         if action == -1:
             if len(self.pageQue) > 1:
                 self.pageQue = self.pageQue[:-1]
-            self.renderPage(0, 1)
-            return
+                # Previous Cursor History Recall
+                cur = self.cursorHistory[len(self.cursorHistory) - 1]
+                self.cursorHistory = self.cursorHistory[:-1]
+            return cur
         displayImage(image)
 
     def actionRouter(self, event):
@@ -139,26 +141,20 @@ class PageRouter:
                     elif rtn == "RETURN":
                         pass
 
-            self.renderPage(-1, 1)
-
         # ===========Patches Actions===========
         if event == "OP1_Synth_Patches":
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
                 renderFolders(config["OP_1_Mounted_Dir"] + "/synth", "Backup", savePaths["Local_Synth"])
-            self.renderPage(-1, 1)
 
         if event == "OP1_Drum_Patches":
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
                 renderFolders(config["OP_1_Mounted_Dir"] + "/drum", "Backup", savePaths["Local_Drum"])
-            self.renderPage(-1, 1)
 
         if event == "UploadSynthPatches":
             renderFolders(savePaths["Local_Synth"], "Upload", config["OP_1_Mounted_Dir"] + "/synth")
-            self.renderPage(-1, 1)
 
         if event == "UploadDrumPatches":
             renderFolders(savePaths["Local_Drum"], "Upload", config["OP_1_Mounted_Dir"] + "/drum")
-            self.renderPage(-1, 1)
 
         if event == "act_5_Backup_All_Patches":
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
@@ -176,57 +172,147 @@ class PageRouter:
                 except:
                     print("File Transfer Error")
                     self.renderErrorMessagePage("File Transfer Error")
-            self.renderPage(-1, 1)
 
-        if event == "USB_MIDI_In_Test":
-            startMidi()
-            self.renderPage(-1, 1)
+        # =================== OP-Z Action Routes ====================
+        if event == "act_Freeze_State_OPZ":
+            if check_OP_Z_Connection() and config["OP_Z_Mounted_Dir"] != "":
+                displayPng(workDir + "/Assets/Img/BackupProject.png")
+                time.sleep(0.1)
+                try:
+                    state = OP1Backup()
+                    state.backupOPZState()
+                    displayPng(workDir + "/Assets/Img/Done.png")
+                    time.sleep(0.1)
+                    getAnyKeyEvent()
+                except:
+                    print("File Transfer Error")
+                    self.renderErrorMessagePage("File Transfer Error")
+            # self.renderPage(-1, 1)
 
-        if event == "USB_MIDI_Out_Test":
-            usbMIDIOut()
-            self.renderPage(-1, 1)
+        if event == "act_Recall_State_To_OPZ":
+            # rtn = "RETURN"
+            while True:
+                temp = RenderOptionsMenu(getDirFileList(savePaths["OP_Z_Local_Backup_States_Path"]), "Recall State")
+                if temp == "RETURN":
+                    break
+                else:
+                    rtn = RenderOptionsMenu(["Upload", "Rename", "Delete"])
+                    if rtn == "Upload":
+                        if check_OP_Z_Connection():
+                            displayPng(workDir + "/Assets/Img/UploadingProject.png")
+                            time.sleep(0.1)
+                            try:
+                                state = OP1Backup()
+                                print("Recall File: ", os.path.join(savePaths["OP_Z_Local_Backup_States_Path"], temp))
+                                state.loadStateToOPZ(os.path.join(savePaths["OP_Z_Local_Backup_States_Path"], temp))
+                                displayPng(workDir + "/Assets/Img/Done.png")
+                                time.sleep(0.1)
+                                getAnyKeyEvent()
+                            except:
+                                print("File Transfer Error")
+                                self.renderErrorMessagePage("File Transfer Error")
+
+                    elif rtn == "Rename":
+                        renderRename(os.path.join(savePaths["OP_Z_Local_Backup_States_Path"], temp))
+                    elif rtn == "Delete":
+                        deleteHelper([os.path.join(savePaths["OP_Z_Local_Backup_States_Path"], temp)])
+                    elif rtn == "RETURN":
+                        pass
+
+            # self.renderPage(-1, 1)
+
+        if event == "OPZ_Patches":
+            if check_OP_Z_Connection() and config["OP_Z_Mounted_Dir"] != "":
+                renderOPZFolder(config["OP_Z_Mounted_Dir"] + "/samplepacks", "Choose From OP-1 Lib")
+
+        if event == "MIDI_Host":
+            midi = MidiTool()
+            midi.usbMIDIOut()
+
+        # ===================== Server ==================
+        if event == "Check_IP":
+            SSH = SSH_Service()
+            # print(SSH.get_ip_address())
+            # print(SSH.get_current_connected())
+            # SSH.start_SSH_Service()
+            username = os.getlogin()
+            IP = SSH.get_ip_address()
+            IP = IP.replace(".", " . ")
+
+            IPDisplay = Image.new('1', (128, 64))
+            draw = ImageDraw.Draw(IPDisplay)
+            draw.rectangle([(0, 0), (128, 10)], 'white')
+            draw.text((50, 0), "SSH IP", font=getFont(), fill='black')
+            draw.text((5, 15), "User : "+username , font=getFont(), fill='white')
+            draw.text((5, 30), "IP : " + IP, font=getFont(), fill='white')
+            draw.text((5, 50), "Password : sys paswd", font=getFont(), fill='white')
+            displayImage(IPDisplay)
+            getAnyKeyEvent()
+
+        if event == "Server IP":
+            SSH = SSH_Service()
+            IP = SSH.get_ip_address()
+
+            IPDisplay = Image.new('1', (128, 64))
+            draw = ImageDraw.Draw(IPDisplay)
+            draw.rectangle([(0, 0), (128, 10)], 'white')
+            draw.text((30, 0), "Browser App", font=getFont(), fill='black')
+            draw.text((0, 15), "Connect To Wifi", font=getFont(), fill='white')
+            draw.text((0, 25), "Open Browser, Then", font=getFont(), fill='white')
+            draw.text((0, 35), "-------------------------------------------------------", font=getSmallFont(), fill='white')
+            draw.text((0, 40), "http://"+IP+":", font=getFont(), fill='white')
+            draw.text((10, 53), "/5000/files", font=getFont(), fill='white')
+
+            displayImage(IPDisplay)
+            getAnyKeyEvent()
 
         # ===========Eject Actions===========
-        if event == "act_ESC_Eject_OP_1":
+        if event == "act_ESC_Eject":
             try:
+                unmounting = Image.new('1', (128, 64))
+                draw = ImageDraw.Draw(unmounting)
+                draw.text((0, 25), "Ejecting....", font=getFont(), fill='white')
+                displayImage(unmounting)
                 if unmount_OP_1():
-                    print("Ejected")
+                    time.sleep(1)
+                    unmounted = Image.new('1', (128, 64))
+                    draw = ImageDraw.Draw(unmounted)
+                    draw.text((0, 25), "Ejected", font=getFont(), fill='white')
+                    displayImage(unmounted)
+                    time.sleep(1)
             except:
-                print("Error")
-            self.renderPage(-1, 1)
+                pass
 
-        # ============= MOUNT OPTION ==============
-        if event == "act_ESC_Mount_OP_1":
-            try:
-                if do_mount():
-                    print("Mounted")
-            except:
-                print("Error")
-            self.renderPage(-1, 1)
         # ========= POWER OFF ====================
         if event == "act_POWER_OFF":
             image = Image.new('1', (128, 64))
             image.paste(Image.open(workDir + "/Assets/Img/PowerOff.png").convert("1"))
             displayImage(image)
             time.sleep(1.0)
-            call("sudo shutdown -h now", shell=True)
+            # call("sudo shutdown -h now", shell=True)
+            call("sudo poweroff", shell=True)
+
 
         if event == "checkStorage":
+            image = Image.new('1', (128, 64))
+            image.paste(Image.open(workDir + "/Assets/Img/Storage_64.png").convert("1"))
+            draw = ImageDraw.Draw(image)
+
             if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
-                image = Image.new('1', (128, 64))
-                image.paste(Image.open(workDir + "/Assets/Img/Storage_64.png").convert("1"))
-                draw = ImageDraw.Draw(image)
                 sampler, synth, drum = update_Current_Storage_Status()
-                Disk = subprocess.check_output("df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'", shell=True)
-                draw.text((50, 13), Disk, font=getFont(), fill="white")  # Disk Storage Render
-                draw.text((28, 48), str(config["Max_Synth_Sampler_patches"] - sampler), font=getFont(), fill="white")
-                draw.text((70, 48), str(config["Max_Synth_Synthesis_patches"] - synth), font=getFont(), fill="white")
-                draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
-                displayImage(image)
-                getAnyKeyEvent()  # Press any key to proceed
             else:
-                print("Not Connected")
-            self.renderPage(-1, 1)
+                sampler, synth, drum = 42, 100, 42
+
+            Disk = str(subprocess.check_output("df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'", shell=True))
+            Disk = Disk.replace("b\'", "")
+            Disk = Disk.replace("\'", "")
+            draw.text((50, 13), str(Disk), font=getFont(), fill="white")  # Disk Storage Render
+            draw.text((28, 48), str(config["Max_Synth_Sampler_patches"] - sampler), font=getFont(), fill="white")
+            draw.text((70, 48), str(config["Max_Synth_Synthesis_patches"] - synth), font=getFont(), fill="white")
+            draw.text((112, 48), str(config["Max_Drum_Patches"] - drum), font=getFont(), fill="white")
+            displayImage(image)
+            getAnyKeyEvent()  # Press any key to proceed
+        self.renderPage(-1, 1)
 
     # Useful in "Are you sure to delete.", "Are you sure to rename"
     def renderConfirmation(self, message=""):

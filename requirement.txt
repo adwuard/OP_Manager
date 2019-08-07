@@ -8,3 +8,6 @@ wifi==0.3.8
 wireless==0.3.2
 Adafruit-GPIO==1.0.3
 username==2.0.2
+Flask==0.12.2
+virtualenv==15.1.0
+

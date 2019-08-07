@@ -1,7 +1,10 @@
 import os
 import time
 import RPi.GPIO as GPIO
-import SSD1306
+import config
+# import SSD1306
+from luma.core.interface.serial import i2c
+from luma.oled.device import ssd1306, ssd1309, ssd1325, ssd1322, ssd1327, ssd1351, ssd1331, sh1106
 from PIL import ImageFont, Image
 
 # import Adafruit_GPIO.SPI as SPI
@@ -25,7 +28,30 @@ GPIO.setup(U_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(D_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(C_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 RST = 24  # Raspberry Pi pin configuration:
-disp = SSD1306.SSD1306_128_64(rst=RST)  # 128x64 display with hardware I2C
+# disp = SSD1306.SSD1306_128_64(rst=RST)  # 128x64 display with hardware I2C
+
+serial = i2c(port=1, address=0x3c)
+
+# SSD1306, SSD1309, SSD1322, SSD1325, SSD1327, SSD1331, SSD1351 and SH1106
+if config.displayConfig["DisplayType"] == "SSD1306":
+    disp = ssd1306(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1309":
+    disp = ssd1309(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1322":
+    disp = ssd1322(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1325":
+    disp = ssd1325(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1327":
+    disp = ssd1327(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1331":
+    disp = ssd1331(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SSD1351":
+    disp = ssd1351(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "SH1106":
+    disp = sh1106(serial, rotate=config.displayConfig["Rotation"])
+elif config.displayConfig["DisplayType"] == "":
+    disp = ssd1306(serial, rotate=config.displayConfig["Rotation"])
+
 
 # SPI Protocol Config
 # Note you can change the I2C address by passing an i2c_address parameter like:
@@ -36,9 +62,7 @@ disp = SSD1306.SSD1306_128_64(rst=RST)  # 128x64 display with hardware I2C
 
 
 # Initialize library and clear image from last session.
-disp.begin()
-
-
+# disp.begin()
 # disp.clear()
 # disp.display()
 
@@ -60,9 +84,7 @@ def clearDisplay():
 
 
 def displayImage(img):
-    disp.clear()
-    disp.image(img)
-    disp.display()
+    disp.display(img)
 
 
 def displayPng(pathToImage):

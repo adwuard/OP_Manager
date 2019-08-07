@@ -5,7 +5,7 @@ from os.path import join
 import smbus2
 
 from FileBrowser import scale
-from config import config
+from config import config, batteryConfig
 
 # import Adafruit_ADS1x15
 LIPO_MIN_VOLTAGE = 3.6
@@ -75,6 +75,7 @@ def readCapacity():
 #    else:
 #        return str(capacity) + "%"
 
+enable = batteryConfig["enable"]
 
 def getBatteryImagePath(percentage):
     ImageFolder = "Assets/Img/battery/ST_1"
@@ -84,29 +85,35 @@ def getBatteryImagePath(percentage):
 # ============================= For UPS-Lite Battery Module =============================
 def readVoltageRaspiUPS():
     # "This function returns as float the voltage from the Raspi UPS Hat via the provided SMBus object"
-    bus = smbus2.SMBus(1)
-    address = 0x36
-    read = bus.read_word_data(address, 2)
-    swapped = struct.unpack("<H", struct.pack(">H", read))[0]
-    voltage = swapped * 1.25 / 1000 / 16
-    bus.close()
-    return voltage
+    if enable:
+        bus = smbus2.SMBus(1)
+        address = 0x36
+        read = bus.read_word_data(address, 2)
+        swapped = struct.unpack("<H", struct.pack(">H", read))[0]
+        voltage = swapped * 1.25 / 1000 / 16
+        bus.close()
+        return voltage
+    else:
+        return 0
 
 
 def readCapacityRaspiUPS():
     # "This function returns as a float the remaining capacity of the battery connected to the Raspi UPS Hat via the provided SMBus object"
-    bus = smbus2.SMBus(1)
-    address = 0x36
-    read = bus.read_word_data(address, 4)
-    bus.close()
-    swapped = struct.unpack("<H", struct.pack(">H", read))[0]
-    capacity = swapped / 256
-    capacity = int(capacity)
-
+    if  enable:
+        bus = smbus2.SMBus(1)
+        address = 0x36
+        read = bus.read_word_data(address, 4)
+        bus.close()
+        swapped = struct.unpack("<H", struct.pack(">H", read))[0]
+        capacity = swapped / 256
+        capacity = int(capacity)
+        return capacity
+    else:
+        return 0
     # if capacity >= FULL_BATT_PERCENTAGE:
     #     return "FULL"
     # elif capacity < LOW_BATT_PERCENTAGE:
     #     return "LOW"
     # else:
     #     return str(capacity) + "%"
-    return capacity
+

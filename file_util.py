@@ -1,15 +1,12 @@
-import json
-from os.path import abspath, join, pardir, basename, dirname
-from time import sleep
-from PIL import Image, ImageDraw
-from GPIO_Init import displayImage, getAnyKeyEvent, getFont
 import os
-import time
 from os.path import abspath, join, pardir, basename, dirname, isdir
 import shutil
 import ntpath
+import GPIO_Init
+import time
+# from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
 from PIL import Image, ImageDraw
-from GPIO_Init import displayImage, getAnyKeyEvent, getFont, displayPng
+
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -119,13 +116,13 @@ def fileTransferHelper(srclist, dest):
             # OP1 to Local
             image.paste(Image.open(workDir + "/Assets/Img/DownloadPatches.png").convert("1"))
         draw = ImageDraw.Draw(image)
-        draw.text((20, 63), srcBaseName, font=getFont(), fill="white")
-        displayImage(image)
+        draw.text((20, 63), srcBaseName, font=GPIO_Init.getFont(), fill="white")
+        GPIO_Init.displayImage(image)
         print(i, distParentFolderName + "/" + srcBaseName)
         shutil.copy2(i, distParentFolderName + "/" + srcBaseName)
 
     displayPng(workDir + "/Assets/Img/Done.png")
-    getAnyKeyEvent()  # Press any key to proceed
+    GPIO_Init.getAnyKeyEvent()  # Press any key to proceed
     return
 
 
@@ -141,7 +138,7 @@ def deleteHelper(srclist):
     :param srclist: list of paths to file or directory
     :return: NA
     """
-    displayPng(workDir + "/Assets/Img/Deleting.png")
+    GPIO_Init.displayPng(workDir + "/Assets/Img/Deleting.png")
     time.sleep(0.2)
     for f in srclist:
         if isdir(f):
@@ -155,9 +152,10 @@ def deleteHelper(srclist):
             if len(os.listdir(folder)) == 0:
                 # If nothing is in the folder, remove the parent folder
                 os.rmdir(folder)
-    displayPng(workDir + "/Assets/Img/Done.png")
-    getAnyKeyEvent()  # Press any key to proceed
+    GPIO_Init.displayPng(workDir + "/Assets/Img/Done.png")
+    GPIO_Init.getAnyKeyEvent()  # Press any key to proceed
     return
+
 
 def recursive_overwrite(src, dest, ignore=None):
     if os.path.isdir(src):
@@ -176,6 +174,15 @@ def recursive_overwrite(src, dest, ignore=None):
     else:
         shutil.copyfile(src, dest)
 
+
+def clearUnderFolder(path):
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            print("remove", f)
+            os.unlink(os.path.join(root, f))
+        for d in dirs:
+            print("remove Dir", d)
+            shutil.rmtree(os.path.join(root, d))
 
 def createImportantFolders():
     from config import savePaths

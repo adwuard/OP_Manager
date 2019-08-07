@@ -1,14 +1,8 @@
 import os
-import time
-
-from PIL import Image, ImageDraw
 import Menu_Page_Router
-
 from GPIO_Init import getKeyStroke, displayImage, getFont, checkKeyInterrupt
-from OP_1_Connection import do_mount, is_connected
 from file_util import createImportantFolders
-import time
-from Midi import startMidi, usbMIDIOut
+from Midi import MidiTool
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -40,8 +34,8 @@ def start():
             pg.renderPage(0, currentCursor)
 
         elif key == "LEFT":
-            currentCursor = 1
-            pg.renderPage(-1, 1)
+            # currentCursor = 1
+            currentCursor = pg.renderPage(-1, 1)
 
         elif key == "RIGHT":
             pg.renderPage(1, currentCursor)
@@ -62,13 +56,6 @@ def start():
 
 
 if __name__ == "__main__":
-    # from multiprocessing import Process
-    # server = Process(target=app.run)
-    # server.start()
-
-    # ============================
     start()
-    # usbMIDIOut()
 
-    # server.terminate()
-    # server.join()
+

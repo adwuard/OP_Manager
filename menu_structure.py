@@ -1,6 +1,7 @@
 WifiTransfer = [
     ["Wifi Transfer", -1],
-    ["Start Server", "Open SSH"]
+    ["SSH Transfer", "Check_IP"],
+    ["Wifi Server", "Server IP"]
     # "Connect", -1
 ]
 
@@ -14,9 +15,10 @@ MIDI =[
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
-    ["Mount/Eject OP-1", "act_ESC_Mount_OP_1"],
-    ["MIDI Host", MIDI],
-    ["Power Off System", "act_POWER_OFF"],
+    ["MIDI Host", "MIDI_Host"],
+    ["SSH Transfer", "Check_IP"],
+    ["Eject", "act_ESC_Eject"],
+    # ["Power Off System", "act_POWER_OFF"],
 ]
 
 # PresetPage = [
@@ -72,8 +74,10 @@ OP1 = [
 
 
 OPZ = [
-    ["OP-Z", -1]
-    # ["Backup Project", "act_"],
+    ["OP-Z", -1],
+    ["Freeze State", "act_Freeze_State_OPZ"],
+    ["Recall State", "act_Recall_State_To_OPZ"],
+    ["Manage OP-Z", "OPZ_Patches"]
     # ["Local Projects", "act_Load_Project_From_Local"]
 ]
 
@@ -81,7 +85,8 @@ MainPage = [
     ["Main Menu", -1],
     ["OP-1", OP1],
     ["OP-Z", OPZ],
-    ["Wifi Transfer", WifiTransfer],
+    # ["Wifi Transfer", WifiTransfer],
     ["Utilities", Utilities],
+    ["Eject", "act_ESC_Eject"]
 ]
 

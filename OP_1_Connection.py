@@ -1,3 +1,5 @@
+import usb.util
+import usb.core
 import json
 import os
 import time
@@ -29,6 +31,8 @@ currentStorageStatus = {
 def is_connected():
     if usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["USB_PRODUCT"]) is not None:
         return True
+    elif usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["OP-Z_USB_PRODUCT"]) is not None:
+        return True
     else:
         return False
 
@@ -59,7 +63,7 @@ def unmountdevice(target):
         raise RuntimeError("Error unmounting {}: {}".format(target, ret))
     os.system("sudo rm -R " + config["OP_1_Mounted_Dir"])
     config["OP_1_Mounted_Dir"] = ""
-    print("unmount op1 finised")
+    # print("unmount op1 finised")
 
 
 # get the system mount path - /dev/sda
@@ -82,16 +86,16 @@ def getMountPath():
     return ""
 
 
-def is_mounted():
-    if getMountPath() == "":
-        return False
-    else:
-        return True
+# def is_mounted():
+#     if getMountPath() == "":
+#         return False
+#     else:
+#         return True
 
 
 def do_mount():
     wait_for_connection()
-    if not is_mounted():
+    if getMountPath() == "":
         try:
             print("-- device not mounted")
             mountpath = getmountpath()
@@ -104,6 +108,10 @@ def do_mount():
     else:
         print("-- device mounted --")
         return True
+
+
+
+
 
 
 def check_OP_1_Connection():
@@ -119,10 +127,10 @@ def check_OP_1_Connection():
 
     if is_connected():
         do_mount()
-        connected = Image.new('1', (128, 64))
-        draw = ImageDraw.Draw(connected)
-        draw.text((0, 25), "Connected", font=getFont(), fill='white')
-        displayImage(connected)
+        # connected = Image.new('1', (128, 64))
+        # draw = ImageDraw.Draw(connected)
+        # draw.text((0, 25), "Connected", font=getFont(), fill='white')
+        # displayImage(connected)
 
         return True
     else:
@@ -137,7 +145,7 @@ def check_OP_1_Connection():
 
 
 def unmount_OP_1():
-    if is_mounted():
+    if getMountPath() != "":
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
         draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
@@ -151,6 +159,15 @@ def unmount_OP_1():
         displayImage(unmountDisplay)
         time.sleep()
         return True
+    elif os.path.isdir(config["OP_Z_Mounted_Dir"]):
+        unmountdevice(config["OP_Z_Mounted_Dir"])
+        unmountDisplay = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(unmountDisplay)
+        draw.text((15, 25), "Ejected", font=getFont(), fill='white')
+        displayImage(unmountDisplay)
+        time.sleep(1)
+        return True
+
     else:
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
@@ -248,3 +265,48 @@ def update_Current_Storage_Status():
     currentStorageStatus["synth"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
     currentStorageStatus["drum"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
     return currentStorageStatus["sampler"], currentStorageStatus["synth"], currentStorageStatus["drum"]
+
+def check_OP_Z_Connection():
+    connected = Image.new('1', (128, 64))
+    draw = ImageDraw.Draw(connected)
+    draw.text((0, 25), "Connecting.....", font=getFont(), fill='white')
+    displayImage(connected)
+    if os.path.isdir(config["OP_Z_Mounted_Dir"]):
+        connected = Image.new('1', (128, 64))
+        # draw = ImageDraw.Draw(connected)
+        # draw.text((0, 25), "Connected", font=getFont(), fill='white')
+        # displayImage(connected)
+        # time.sleep(1)
+        return True
+    else:
+        connected = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(connected)
+        draw.text((0, 25), "No Connection!", font=getFont(), fill='white')
+        displayImage(connected)
+        config["USB_Mount_Path"] = ""
+        time.sleep(1)
+        return False
+
+
+def unmount_OP_Z():
+    if getMountPath() != "":
+        unmountDisplay = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(unmountDisplay)
+        draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
+        displayImage(unmountDisplay)
+        unmountdevice(config["OP_Z_Mounted_Dir"])
+        config["USB_Mount_Path"] = ""
+        unmountDisplay = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(unmountDisplay)
+        draw.text((30, 25), "Ejected!", font=getFont(), fill='white')
+        displayImage(unmountDisplay)
+        time.sleep(1)
+        return True
+    else:
+        unmountDisplay = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(unmountDisplay)
+        draw.text((15, 25), "No Device to Eject", font=getFont(), fill='white')
+        displayImage(unmountDisplay)
+        time.sleep(1)
+        return False
+
