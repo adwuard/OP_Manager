@@ -43,7 +43,7 @@ displayConfig = {
 }
 
 batteryConfig = {
-    "enable": True,
+    "enable": False,
     "UPS_Method": "RaspiUPS"  # RaspiUPS or ADS1115
 }
 
