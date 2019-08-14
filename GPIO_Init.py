@@ -2,19 +2,16 @@ import os
 import time
 import RPi.GPIO as GPIO
 import config
-# import SSD1306
 from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306, ssd1309, ssd1325, ssd1322, ssd1327, ssd1351, ssd1331, sh1106
 from PIL import ImageFont, Image
-
-# import Adafruit_GPIO.SPI as SPI
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
 
 workDir = os.path.dirname(os.path.realpath(__file__))
 
-# Input pins:
+# Key Press Input Pins:
 L_pin, R_pin, C_pin, U_pin, D_pin = 27, 23, 4, 17, 22
 A_pin, B_pin = 5, 6
 
@@ -27,12 +24,13 @@ GPIO.setup(R_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(U_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(D_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(C_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-RST = 24  # Raspberry Pi pin configuration:
-# disp = SSD1306.SSD1306_128_64(rst=RST)  # 128x64 display with hardware I2C
 
-serial = i2c(port=1, address=0x3c)
+# Open i2c address port
+serial = i2c(port=config.displayConfig["port"], address=config.displayConfig["address"])
 
-# SSD1306, SSD1309, SSD1322, SSD1325, SSD1327, SSD1331, SSD1351 and SH1106
+
+# Get Config Setting and initialize the compatible OLED device
+# Compatible devices -> SSD1306, SSD1309, SSD1322, SSD1325, SSD1327, SSD1331, SSD1351 and SH1106
 if config.displayConfig["DisplayType"] == "SSD1306":
     disp = ssd1306(serial, rotate=config.displayConfig["Rotation"])
 elif config.displayConfig["DisplayType"] == "SSD1309":
@@ -53,20 +51,6 @@ elif config.displayConfig["DisplayType"] == "":
     disp = ssd1306(serial, rotate=config.displayConfig["Rotation"])
 
 
-# SPI Protocol Config
-# Note you can change the I2C address by passing an i2c_address parameter like:
-# disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
-# Alternatively you can specify an explicit I2C bus number, for example
-# with the 128x32 display you would use:
-# disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST, i2c_bus=2)
-
-
-# Initialize library and clear image from last session.
-# disp.begin()
-# disp.clear()
-# disp.display()
-
-
 def getLargeFont():
     return ImageFont.truetype(workDir + "/Fonts/Georgia Bold.ttf", 12)
 
@@ -80,50 +64,73 @@ def getSmallFont():
 
 
 def clearDisplay():
+    """
+        Connector function to clear OLED Display
+        :param img:
+        :return: None
+    """
     disp.clear()
 
 
 def displayImage(img):
+    """
+    Connector function to send PIL images on to the OLED Display
+    :param img:
+    :return: None
+    """
     disp.display(img)
 
 
 def displayPng(pathToImage):
+    """
+    Given path to image. This function translate to PIL image and display on to the OLED display
+    :param pathToImage:
+    :return:
+    """
     image = Image.new('1', (128, 64))
     image.paste(Image.open(pathToImage).convert("1"))
     displayImage(image)
 
 
 def getKeyStroke():
+    """
+    Blocking version of getting a key
+    :return: "UP" | "LEFT" | "RIGHT" | "DOWN" | "CENTER" | "A" | "B" | ""
+    """
     time.sleep(0.05)
-    try:
-        while 1:
-            if not GPIO.input(U_pin):
-                return "UP"
-            if not GPIO.input(L_pin):
-                return "LEFT"
-            if not GPIO.input(R_pin):
-                return "RIGHT"
-            if not GPIO.input(D_pin):
-                return "DOWN"
-            if not GPIO.input(C_pin):
-                time.sleep(0.2)
-                return "CENTER"
-            if not GPIO.input(A_pin):
-                time.sleep(0.2)
-                return "A"
-            if not GPIO.input(B_pin):
-                time.sleep(0.2)
-                return "B"
-    except KeyboardInterrupt:
-        GPIO.cleanup()
+    while 1:
+        if not GPIO.input(U_pin):
+            return "UP"
+        if not GPIO.input(L_pin):
+            time.sleep(0.2)
+            return "LEFT"
+        if not GPIO.input(R_pin):
+            return "RIGHT"
+        if not GPIO.input(D_pin):
+            return "DOWN"
+        if not GPIO.input(C_pin):
+            time.sleep(0.1)
+            return "CENTER"
+        if not GPIO.input(A_pin):
+            # Return Key
+            time.sleep(0.2)
+            return "A"
+        if not GPIO.input(B_pin):
+            # Enter Key
+            time.sleep(0.1)
+            return "B"
 
 
 def checkKeyInterrupt():
-    time.sleep(0.05)
+    """
+    Non-Blocking get key
+    :return: "UP" | "LEFT" | "RIGHT" | "DOWN" | "CENTER" | "A" | "B" | ""
+    """
+    # time.sleep(0.05)
     if not GPIO.input(U_pin):
         return "UP"
     if not GPIO.input(L_pin):
-        time.sleep(0.1)
+        time.sleep(0.2)
         return "LEFT"
     if not GPIO.input(R_pin):
         time.sleep(0.1)
@@ -131,16 +138,24 @@ def checkKeyInterrupt():
     if not GPIO.input(D_pin):
         return "DOWN"
     if not GPIO.input(C_pin):
-        time.sleep(0.2)
+        time.sleep(0.1)
         return "CENTER"
     if not GPIO.input(A_pin):
+        # Return Key
+        time.sleep(0.2)
         return "A"
     if not GPIO.input(B_pin):
+        # Enter Key
         return "B"
     else:
         return ""
 
 
 def getAnyKeyEvent():
+    """
+    Blocking
+    If any key are pressed, returns True
+    :return: True
+    """
     if getKeyStroke() != "":
         return True
