@@ -1,16 +1,25 @@
 ## Newly Added Features  
-#### Patches 
+#### OP1 Patches 
 * Backup Patches - Backup all the new patches to local library   
 * Upload Patches/Packs - Upload patches from local library. It can be singe patch or multiple  
 * Rename Patch Name - Be able to change patch name  
-#### Projects
+#### OP1 Projects
 * Rename Project -------- Be able to change project name  
 * Backup Project -------- Backing up all the project files to local library  
 * Upload Project -------- Overwrite current project on the OP-1  
+
+#### OPZ Project
+* Freeze OPZ State ------ Backup OPZ entire instance including projects and samples
+* Recall OPZ State ------ Recall OPZ entire instance including projects and samples
+* Manage OPZ      ------- Upload/Delete samples from existing OP1 Library   
+
+#### MIDI HOST
+* USB MIDI can now be hosted and transmit through standard 5 Pin Midi In Out port  
+
 #### Others
 * New Battery Level Indicator  
 * Other minor bug fixes  
-* Oh, and I got a new OP-Z, trying to figure out how to incorporate with this project :) 
+
 
 
 
@@ -58,7 +67,7 @@ Fill this form if you are interested buying one [Buy Request Form](https://docs.
 * RPI W
 * 4000mAh 3.7V Lipo Chell + BMS
 
-<img src="/documentation/IMG_9550.JPG" data-canonical-src="/documentation/IMG_9550.JPG" width="600" />
+<img src="/documentation/68372175_2678265705519425_1045217593272565760_n.jpg" data-canonical-src="/documentation/68372175_2678265705519425_1045217593272565760_n.jpg" width="600" />
 
 
 
