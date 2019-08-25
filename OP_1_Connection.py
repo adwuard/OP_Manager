@@ -1,3 +1,5 @@
+import threading
+
 import usb.util
 import usb.core
 import json
@@ -22,39 +24,19 @@ currentStorageStatus = {
 }
 
 
-# OP-1 connection
-# def ensure_connection():
-#     if not is_connected():
-#         wait_for_connection()
-
-
 def is_connected():
     if usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["USB_PRODUCT"]) is not None:
         return True
-    elif usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["OP-Z_USB_PRODUCT"]) is not None:
+    if usb.core.find(idVendor=config["USB_VENDOR"], idProduct=config["OP-Z_USB_PRODUCT"]) is not None:
         return True
-    else:
-        return False
+    return False
 
 
-# TODO ADD WHILE
-def wait_for_connection():
-    if is_connected():
-        print("Connected!")
-    else:
-        print("not connected")
-    time.sleep(2)
-
-
-# mountdevice(config["OP_1_Mounted_Dir"],
-# Mounting FAT32 with user 
+# =========system shell calls to mount and unmount devices=========
 def mountdevice(source, target):
-    print("mount device with !" + source + "! !" + target + "! !" + username() + "!")
-
     ret = os.system('sudo -E mount {} {}'.format(source, target))
     if ret not in (0, 8192):
         raise RuntimeError("Error mounting {} on {}: {}".format(source, target, ret))
-    config["OP_1_Mounted_Dir"] = target
 
 
 def unmountdevice(target):
@@ -63,75 +45,95 @@ def unmountdevice(target):
         raise RuntimeError("Error unmounting {}: {}".format(target, ret))
     os.system("sudo rm -R " + config["OP_1_Mounted_Dir"])
     config["OP_1_Mounted_Dir"] = ""
+    config["OP_Z_Mounted_Dir"] = ""
     # print("unmount op1 finised")
 
 
-# get the system mount path - /dev/sda
-def getmountpath():
-    o = os.popen('readlink -f /dev/disk/by-id/' + config["OP_1_USB_ID"]).read()
+def getmountpath(device):
+    """
+    Search base on device's USB ID
+    Then get the system mount path - EX: /dev/sda
+    :param device:
+    :return:
+    """
+    o = None
+    if device == "OP1":
+        o = os.popen('readlink -f /dev/disk/by-id/' + config["OP_1_USB_ID"]).read()
+    elif device == "OPZ":
+        o = os.popen('readlink -f /dev/disk/by-id/' + config["OP_Z_USB_ID"]).read()
     return o.rstrip()
 
 
-# chekcs if the partiion is mounted if not it return ""
-def getMountPath():
-    mountpath = getmountpath()
+def getMountPath(device):
+    """
+    Checks if the partition is mounted if not it return ""
+    :param device: Target device being string "OP1" or "OPZ"
+    :return: "" is not found
+    """
+    mountpath = getmountpath(device)
     # mountPoint = ""
     for i, disk in enumerate(disk_partitions()):
         print(disk)
         if disk.device == mountpath:
             mountPoint = disk.mountpoint
-            config["OP_1_Mounted_Dir"] = mountPoint
-            print(config["OP_1_Mounted_Dir"])
+            if device == "OP1":
+                config["OP_1_Mounted_Dir"] = mountPoint
+                print(config["OP_1_Mounted_Dir"])
+            elif device == "OPZ":
+                config["OP_Z_Mounted_Dir"] = mountPoint
+                print(config["OP_Z_Mounted_Dir"])
             return mountPoint
     return ""
 
 
-# def is_mounted():
-#     if getMountPath() == "":
-#         return False
-#     else:
-#         return True
-
-
-def do_mount():
-    wait_for_connection()
-    if getMountPath() == "":
+def do_mount(device):
+    if getMountPath(device) == "":
         try:
             print("-- device not mounted")
-            mountpath = getmountpath()
+            mountpath = getmountpath(device)
             config["USB_Mount_Path"] = mountpath
-            create_mount_point()
-            mountdevice(config["USB_Mount_Path"], config["TargetOp1MountDir"])
+            print (mountpath)
+            if device == "OP1" and mountpath != "":
+                print(config["TargetOp1MountDir"])
+                # config["TargetOp1MountDir"] = mountpath
+                os.system("sudo mkdir -p " + config["TargetOp1MountDir"])
+                os.system("sudo chmod 0777 " + config["TargetOp1MountDir"])
+                mountdevice(config["USB_Mount_Path"], config["TargetOp1MountDir"])
+
+            elif device == "OPZ" and mountpath != "":
+                print(config["TargetOpZMountDir"])
+                # config["TargetOp1MountDir"] = mountpath
+                os.system("sudo mkdir -p " + config["TargetOpZMountDir"])
+                os.system("sudo chmod 0777 " + config["TargetOpZMountDir"])
+                mountdevice(config["USB_Mount_Path"], config["TargetOpZMountDir"])
         except:
             return False
-        return True
+        return False
     else:
-        print("-- device mounted --")
         return True
 
 
-
-
+# ======== OP1 Mount/Unmount Helper Functions ===========
+def check_OP_1_Connection_Silent():
+    if is_connected():
+        if do_mount("OP1"):
+            return True
+    else:
+        return False
 
 
 def check_OP_1_Connection():
-    # if config["USB_Mount_Path"] == "":
-    #     image = Image.new('1', (128, 64))
-    #     image.paste(Image.open(workDir + "/Assets/Img/ConnectOP_1.png").convert("1"))
-    #     displayImage(image)
-
     connected = Image.new('1', (128, 64))
     draw = ImageDraw.Draw(connected)
     draw.text((0, 25), "Connecting.....", font=getFont(), fill='white')
     displayImage(connected)
 
-    if is_connected():
-        do_mount()
-        # connected = Image.new('1', (128, 64))
-        # draw = ImageDraw.Draw(connected)
-        # draw.text((0, 25), "Connected", font=getFont(), fill='white')
-        # displayImage(connected)
-
+    # if is_connected():
+    if do_mount("OP1"):
+        connected = Image.new('1', (128, 64))
+        draw = ImageDraw.Draw(connected)
+        draw.text((0, 25), "Connected", font=getFont(), fill='white')
+        displayImage(connected)
         return True
     else:
         connected = Image.new('1', (128, 64))
@@ -145,7 +147,7 @@ def check_OP_1_Connection():
 
 
 def unmount_OP_1():
-    if getMountPath() != "":
+    if getMountPath("OP1") != "":
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
         draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
@@ -155,9 +157,9 @@ def unmount_OP_1():
         config["USB_Mount_Path"] = ""
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
-        draw.text((30, 25), "Ejected!", font=getFont(), fill='white')
+        draw.text((30, 25), "Ejected", font=getFont(), fill='white')
         displayImage(unmountDisplay)
-        time.sleep()
+        time.sleep(1)
         return True
     elif os.path.isdir(config["OP_Z_Mounted_Dir"]):
         unmountdevice(config["OP_Z_Mounted_Dir"])
@@ -177,14 +179,7 @@ def unmount_OP_1():
         return False
 
 
-def create_mount_point():
-    try:
-        os.system("sudo mkdir -p " + config["TargetOp1MountDir"])
-        os.system("sudo chmod 0777 " + config["TargetOp1MountDir"])
-    except:
-        print("error cant create mount point directory")
-
-
+# ============= OP1 Helper tools =================
 def get_abbreviation(text):
     """
     Rename texts to abbreviations in order to fit better to the screen
@@ -203,6 +198,7 @@ def get_abbreviation(text):
 
 def getFileCount(startPath):
     """
+    For OP1 only
     Given path to dir, and return the counts of .aif files and all child directory
     :param startPath: path to folder
     :return: int: total count of aif files
@@ -217,6 +213,7 @@ def getFileCount(startPath):
 
 def analyzeAIF(pathTOAIF):
     """
+    For OP1 only
     path to the op1 AIF file extracting json format from the meta data and analyze patch type
     :param pathTOAIF: path to OP1 aif file
     :return: tuple of three strings (type, fx,lfo)
@@ -238,45 +235,25 @@ def analyzeAIF(pathTOAIF):
     return data.get("type").capitalize(), data.get("fx_type").capitalize(), data.get("lfo_type").capitalize()
 
 
-# def checkOccupiedSlots(startPath):
-#     patchType = ""
-#     sampleEngine = []
-#     synthEngine = []
-#     drum = []
-#     for root, dirs, files in os.walk(startPath):
-#         for f in files:
-#             currentFilePath = str(root) + "/" + f
-#             if f.endswith('.aif') and not f.startswith("."):
-#                 try:
-#                     patchType, fx, lfo = analyzeAIF(currentFilePath)
-#                 except:
-#                     pass
-#             if patchType == "Drum" or patchType == "Dbox" and "drum" in currentFilePath:
-#                 drum.append(currentFilePath)
-#             elif patchType == "Sampler":
-#                 sampleEngine.append(currentFilePath)
-#             else:
-#                 synthEngine.append(currentFilePath)
-#     return [sampleEngine, synthEngine, drum]
-
-
 def update_Current_Storage_Status():
     currentStorageStatus["sampler"] = getFileCount(config["OP_1_Mounted_Dir"] + "/synth")
     currentStorageStatus["synth"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
     currentStorageStatus["drum"] = getFileCount(config["OP_1_Mounted_Dir"] + "/drum")
     return currentStorageStatus["sampler"], currentStorageStatus["synth"], currentStorageStatus["drum"]
 
+
+# ======== OPZ Mount/Unmount Helper Functions ===========
 def check_OP_Z_Connection():
     connected = Image.new('1', (128, 64))
     draw = ImageDraw.Draw(connected)
     draw.text((0, 25), "Connecting.....", font=getFont(), fill='white')
     displayImage(connected)
-    if os.path.isdir(config["OP_Z_Mounted_Dir"]):
+    if do_mount("OPZ"):
         connected = Image.new('1', (128, 64))
-        # draw = ImageDraw.Draw(connected)
-        # draw.text((0, 25), "Connected", font=getFont(), fill='white')
-        # displayImage(connected)
-        # time.sleep(1)
+        draw = ImageDraw.Draw(connected)
+        draw.text((0, 25), "Connected", font=getFont(), fill='white')
+        displayImage(connected)
+        time.sleep(1)
         return True
     else:
         connected = Image.new('1', (128, 64))
@@ -289,7 +266,7 @@ def check_OP_Z_Connection():
 
 
 def unmount_OP_Z():
-    if getMountPath() != "":
+    if getMountPath("OPZ") != "":
         unmountDisplay = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(unmountDisplay)
         draw.text((30, 25), "Ejecting!", font=getFont(), fill='white')
@@ -309,4 +286,32 @@ def unmount_OP_Z():
         displayImage(unmountDisplay)
         time.sleep(1)
         return False
+
+
+def autoMountUnmontThread():
+    while 1:
+        print("Unmount Checking Thread")
+        # if config["OP_1_Mounted_Dir"] == "":
+        #     if do_mount("OP1"):
+        #         print("============ Thread OP1 Mounted ==============")
+        #     else:
+        #         print("============ Thread Waiting OP1 ==============")
+        # if config["OP_Z_Mounted_Dir"] == "":
+        #     if do_mount("OPZ"):
+        #         print("============ Thread OPZ Mounted ==============")
+        #     else:
+        #         print("============ Thread Waiting OPZ ==============")
+        # Device Mounted check for unmount
+        if config["OP_1_Mounted_Dir"] != "":
+            if not os.listdir(config["OP_1_Mounted_Dir"]):
+                unmountdevice(config["OP_1_Mounted_Dir"])
+                config["OP_1_Mounted_Dir"] = ""
+                print("============ Thread OP1 Auto Unmount==============")
+        if config["OP_Z_Mounted_Dir"] != "":
+            if not os.listdir(config["TargetOpZMountDir"]):
+                unmountdevice(config["OP_Z_Mounted_Dir"])
+                config["OP_z_Mounted_Dir"] = ""
+                print("============ Thread OPZ Auto Unmount==============")
+        time.sleep(3)
+
 

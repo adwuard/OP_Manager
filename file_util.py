@@ -7,7 +7,6 @@ import time
 # from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
 from PIL import Image, ImageDraw
 
-
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
 
@@ -121,7 +120,7 @@ def fileTransferHelper(srclist, dest):
         print(i, distParentFolderName + "/" + srcBaseName)
         shutil.copy2(i, distParentFolderName + "/" + srcBaseName)
 
-    displayPng(workDir + "/Assets/Img/Done.png")
+    GPIO_Init.displayPng(workDir + "/Assets/Img/Done.png")
     GPIO_Init.getAnyKeyEvent()  # Press any key to proceed
     return
 
@@ -139,7 +138,7 @@ def deleteHelper(srclist):
     :return: NA
     """
     GPIO_Init.displayPng(workDir + "/Assets/Img/Deleting.png")
-    time.sleep(0.2)
+    time.sleep(0.5)
     for f in srclist:
         if isdir(f):
             # If given element in a list is a directory
@@ -152,12 +151,14 @@ def deleteHelper(srclist):
             if len(os.listdir(folder)) == 0:
                 # If nothing is in the folder, remove the parent folder
                 os.rmdir(folder)
+
     GPIO_Init.displayPng(workDir + "/Assets/Img/Done.png")
     GPIO_Init.getAnyKeyEvent()  # Press any key to proceed
     return
 
 
 def recursive_overwrite(src, dest, ignore=None):
+    print(src, dest)
     if os.path.isdir(src):
         if not os.path.isdir(dest):
             os.makedirs(dest)
@@ -175,6 +176,20 @@ def recursive_overwrite(src, dest, ignore=None):
         shutil.copyfile(src, dest)
 
 
+def moveFilesToFolder(lst, destFolderPath):
+    for f in lst:
+        base = basename(f)
+        dest = os.path.join(destFolderPath, base)
+        print("Moving: ", f, "      To: ", dest)
+        shutil.move(f, dest)
+
+
+def createEmptyFolder(path, foldername):
+    newFolderPath = join(path, foldername)
+    if not os.path.exists(newFolderPath):
+        os.makedirs(newFolderPath)
+
+
 def clearUnderFolder(path):
     for root, dirs, files in os.walk(path):
         for f in files:
@@ -183,6 +198,7 @@ def clearUnderFolder(path):
         for d in dirs:
             print("remove Dir", d)
             shutil.rmtree(os.path.join(root, d))
+
 
 def createImportantFolders():
     from config import savePaths

@@ -15,6 +15,7 @@ class SSH_Service:
         pass
 
     def get_ip_address(self):
+        import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip_address = s.getsockname()[0]
@@ -24,7 +25,6 @@ class SSH_Service:
     def get_current_connected(self):
         # from wireless import Wireless
         # wireless = Wireless()
-        # print(wireless.connect(ssid='ED AirPort Extreme 5GHz', password='Chyi8186'))
         # print(wireless.current())
         # return wireless.current()
         return None

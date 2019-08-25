@@ -29,6 +29,7 @@ requests==2.12.4
 RPi.GPIO==0.7.0
 rtmidi==2.3.4
 python-rtmidi
+numpy
 SecretStorage==2.3.1
 simplejson==3.10.0
 six==1.12.0

@@ -3,73 +3,20 @@ import os
 import shutil
 import time
 from os import listdir
-from os.path import basename, join
+from os.path import basename, join, dirname
 from PIL import Image, ImageDraw
-from GPIO_Init import getFont, getKeyStroke, displayImage, clearDisplay, getSmallFont, getAnyKeyEvent
+
+from FileBrowserDT import fileBrowserDT
+from GPIO_Init import getFont, getKeyStroke, displayImage, getSmallFont, getAnyKeyEvent
 from OP_1_Connection import get_abbreviation, update_Current_Storage_Status, check_OP_1_Connection, analyzeAIF, \
-    check_OP_Z_Connection
+    check_OP_Z_Connection, check_OP_1_Connection_Silent
 from config import config, savePaths
-from file_util import fileTransferHelper, deleteHelper, clearUnderFolder
+from file_util import fileTransferHelper, deleteHelper, clearUnderFolder, createEmptyFolder, moveFilesToFolder
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
 
 workDir = os.path.dirname(os.path.realpath(__file__))
-
-
-class fileBrowser:
-    def __init__(self, Dir):
-        self.histQueue = [Dir]
-        self.currentDirLst = sorted(os.listdir(Dir))
-        self.currentDirPath = Dir
-        self.prevDir = ""
-        self.copyQueue = []
-
-    def structCurrentPath(self):
-        lst = self.histQueue
-        str = ""
-        for i in lst:
-            str += i + "/"
-        return str
-
-    def selectNewPath(self, item):
-        self.histQueue.append(item)
-        self.currentDirLst = sorted(
-            [f for f in listdir(self.structCurrentPath()) if not f.startswith(".") and not f.endswith("plz")])
-        return self.currentDirLst
-
-    def addToCopyQueue(self, item):
-        # self.copyQueue.append(str(self.structCurrentPath()) + str(self.currentDirLst[item - 1]))
-        self.copyQueue.append(str(self.structCurrentPath()) + str(item))
-
-    def removeFromCopyQueue(self, item):
-        self.copyQueue.remove(str(self.structCurrentPath() + str(item)))
-
-    def clearCopyQueue(self):
-        self.copyQueue = []
-
-    def prevPage(self):
-        if len(self.histQueue) > 1:
-            self.histQueue = self.histQueue[:-1]
-            self.currentDirLst = sorted([f for f in listdir(self.structCurrentPath()) if not f.startswith(".")])
-            self.copyQueue = []
-            return True
-        else:
-            # Exit Current Program
-            return False
-
-    def updatePage(self):
-        self.currentDirLst = sorted([f for f in listdir(self.structCurrentPath()) if not f.startswith(".")])
-        self.copyQueue = []
-
-    def getCopyQueue(self):
-        return self.copyQueue
-
-    def setDirList(self, lst):
-        self.currentDirLst = lst
-
-    def getDirList(self):
-        return self.currentDirLst
 
 
 # =======================For UI Rendering and page scrolling helper functions=======================
@@ -138,7 +85,7 @@ def getScrollBarSize(lst):
         return scrollFullSize * scale(lstSize, (5, 50), (0.5, 0.05))
 
 
-def renderRename(file=""):
+def renderRename(file="", jsutName=False):
     """
     Given a file path, renders for rename, with confirmation for rename or cancel,
     :param file:
@@ -154,11 +101,18 @@ def renderRename(file=""):
         draw = ImageDraw.Draw(image)
         draw.rectangle([(-1, 0), (128, 64)], 'black', 'white')
         draw.rectangle([(0, 0), (128, 10)], 'white')
-        if os.path.isdir(file):
+
+        if not os.path.exists(file):
+            # The given path does not exist, means its creating a new folder
+            draw.text((2, 0), str("New Folder"), fill='black', font=getFont())
+
+        elif os.path.isdir(file):
             draw.text((2, 0), str("Rename Folder"), fill='black', font=getFont())
+            draw.text((1, 15), str(originalName.split(".")[0]), font=getFont(), fill="white")
         else:
             draw.text((2, 0), str("Rename Patch"), fill='black', font=getFont())
-        draw.text((1, 15), str(originalName.split(".")[0]), font=getFont(), fill="white")
+            draw.text((1, 15), str(originalName.split(".")[0]), font=getFont(), fill="white")
+
         # Render Rename Edit Space
         offset, spacing = 15, 10
         for i in newName:
@@ -207,9 +161,18 @@ def renderRename(file=""):
             elif newName[charPointer] in ascii_uppercase:
                 newName[charPointer] = digits[0]
         if key == "A":
-            return
+            return ""
 
         if key == "B":
+            if jsutName:
+                name = ''.join(newName).replace("_", " ").strip()
+                if len(name) != 0:
+                    rtn = RenderOptionsMenu(["Yes", "Cancel"], "Confirm")
+                    if rtn == "Yes":
+                        return name
+                    else:
+                        return ""
+
             dirlst = os.listdir(dirPath)
             name = ''.join(newName).replace("_", " ").strip()
             if newName in dirlst:
@@ -237,7 +200,7 @@ def renderRename(file=""):
                     pass
 
 
-def RenderOptionsMenu(lst, title="action"):
+def RenderOptionsMenu(lst, title="action", sort=True):
     """
     Renders items in given list, and return the string whatever user chooses
     :param title:
@@ -251,8 +214,10 @@ def RenderOptionsMenu(lst, title="action"):
         image = Image.new('1', (128, 64))
         draw = ImageDraw.Draw(image)
         draw.rectangle([(0, 0), (128, 10)], 'white')
-        draw.text((0, 2), title, fill='black', font=getFont())
-        lst = sorted(lst)
+        draw.text((0, 0), title, fill='black', font=getFont())
+
+        if sort:
+            lst = sorted(lst)
         shortArray = shiftArray(lst, shortArray, 0)
 
         for i in range(0, len(shortArray)):
@@ -265,7 +230,12 @@ def RenderOptionsMenu(lst, title="action"):
             draw.line((127, 10 + offset, 127, 10 + scrollBarLength + offset),
                       fill="white", width=1)
 
-        draw.text((2, currentCursor * 10), ">", fill='white', font=getFont())
+        # Not items in the given lst
+        if not len(lst):
+            draw.text((2, currentCursor * 10), "[----Empty----]", fill='white', font=getFont())
+        else:
+            draw.text((2, currentCursor * 10), ">", fill='white', font=getFont())
+
         displayImage(image)
 
         key = getKeyStroke()
@@ -288,27 +258,34 @@ def RenderOptionsMenu(lst, title="action"):
             else:
                 currentCursor += 1
                 actualFilePointer += 1
+
         if key == "LEFT":
             return "RETURN"
+
         if key == "RIGHT":
-            return lst[actualFilePointer - 1]
+            if len(lst):
+                return lst[actualFilePointer - 1]
+
         if key == "A":
             return "RETURN"
+
         if key == "B":
-            return lst[actualFilePointer - 1]
+            if len(lst):
+                return lst[actualFilePointer - 1]
 
 
-def renderFolders(path, upload_download, dest, singleFileSelection=False):
+def renderFolders(path, upload_download, dest, singleFileSelection=False, localMode=False):
     actualFilePointer = 1
     currentCursor = 1
     shortArray = []
     selectedDisplay = []
 
-    fb = fileBrowser(path)
+    fb = fileBrowserDT(path)
     # RenderFolders
     while True:
-        sampler, synth, drum = update_Current_Storage_Status()
-        if config["OP_Z_Mounted_Dir"] == "":
+        # sampler, synth, drum = update_Current_Storage_Status()
+        if check_OP_1_Connection_Silent():
+            sampler, synth, drum = update_Current_Storage_Status()
             if "synth" in fb.structCurrentPath() or "Synth" in fb.structCurrentPath():
                 # Display synth and Sample Available
                 availableSlots = config["Max_Synth_Synthesis_patches"] + config["Max_Synth_Sampler_patches"] - (
@@ -324,20 +301,21 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
 
         draw.text((2, -1), os.path.basename(fb.structCurrentPath()[:-1]), fill='black', font=getFont())
 
-        if "synth" in fb.structCurrentPath().lower():
-            # Display synth and Sample Available
-            draw.text((108, -2), str(availableSlots), fill='white', font=getFont())
+        if config["OP_1_Mounted_Dir"] != "":
+            if "synth" in fb.structCurrentPath().lower():
+                # Display synth and Sample Available
+                draw.text((108, -2), str(availableSlots - len(fb.getCopyQueue())), fill='white', font=getFont())
+            else:
+                # Display available drums
+                draw.text((108, -2), str(availableSlots - len(fb.getCopyQueue())), fill='white', font=getFont())
         else:
-            # Display available drums
-            draw.text((108, -2), str(availableSlots), fill='white', font=getFont())
+            draw.text((108, -2), "--", fill='white', font=getFont())
 
         shortArray = shiftArray(fb.getDirList(), shortArray, 0)
         # Empty Folder
         if not shortArray:
-            draw.text((30, 40), "[Empty]", fill='white', font=getFont())
+            draw.text((5, 10), "[----Empty----]", fill='white', font=getFont())
             displayImage(image)
-            time.sleep(2)
-            return
 
         counter = 1
         for i in shortArray:
@@ -362,7 +340,7 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
                 i = i[:10] + ".."
             # Iterate through selected queue and invert the color
             if selected:
-                draw.rectangle(((9, counter * 10), (84, counter * 10 + 10)), 'white')
+                draw.rectangle(((9, counter * 10), (83, counter * 10 + 10)), 'white')
                 draw.text((10, counter * 10), str(i), fill='black', font=getFont())
             else:
                 draw.text((10, counter * 10), str(i), fill='white', font=getFont())
@@ -370,7 +348,8 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
             counter += 1
 
         # Render cursor
-        draw.text((0, currentCursor * 10), ">", fill='white', font=getFont())
+        if shortArray:
+            draw.text((0, currentCursor * 10), ">", fill='white', font=getFont())
 
         # Render Scroll Bar
         scrollBarXLocation = 86
@@ -418,30 +397,43 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
                 return
 
         if key == "RIGHT":
-            if len(fb.getCopyQueue()) == 0 and "aif" not in fb.getDirList()[actualFilePointer - 1]:
-                fb.selectNewPath(fb.getDirList()[actualFilePointer - 1])
-                currentCursor = 1
-                actualFilePointer = 1
+            if len(fb.getDirList()):
+                if len(fb.getCopyQueue()) == 0 and "aif" not in fb.getDirList()[actualFilePointer - 1]:
+                    fb.selectNewPath(fb.getDirList()[actualFilePointer - 1])
+                    currentCursor = 1
+                    actualFilePointer = 1
 
         if key == "CENTER":
             # Start Multi-select. (Select and deselect, and add the selected ones to copy queue)
             if not singleFileSelection:
-                currentFile = fb.getDirList()[actualFilePointer - 1]
-                selectedFolderPath = fb.structCurrentPath() + currentFile
+                currentFile = []
+                selectedFolderPath = ""
+
+                if len(fb.getDirList()):
+                    currentFile = fb.getDirList()[actualFilePointer - 1]
+                    selectedFolderPath = fb.structCurrentPath() + currentFile
                 # Add to copy
                 if currentFile not in selectedDisplay:
                     # Decrement Available Patches
                     if os.path.isdir(selectedFolderPath):
-                        selectedDisplay.append(currentFile)
-                        for i in listdir(selectedFolderPath):
-                            fb.addToCopyQueue(currentFile + "/" + i)
+                        if availableSlots - len(listdir(selectedFolderPath)) >= 0 or config["OP_1_Mounted_Dir"] == "":
+                            selectedDisplay.append(currentFile)
+                            for i in listdir(selectedFolderPath):
+                                fb.addToCopyQueue(currentFile + "/" + i)
+                                if "media" not in fb.structCurrentPath():
+                                    availableSlots -= 1
+                        else:
+                            print("Over Shoot")
+
+                    else:
+                        if availableSlots - 1 >= 0 or config["OP_1_Mounted_Dir"] == "":
+                            fb.addToCopyQueue(currentFile)
+                            selectedDisplay.append(currentFile)
                             if "media" not in fb.structCurrentPath():
                                 availableSlots -= 1
-                    else:
-                        fb.addToCopyQueue(currentFile)
-                        selectedDisplay.append(currentFile)
-                        if "media" not in fb.structCurrentPath():
-                            availableSlots -= 1
+                        else:
+                            print("Over Shoot")
+
                 else:
                     # Remove form copy
                     if os.path.isdir(selectedFolderPath):
@@ -461,31 +453,49 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
             # return
         if key == "B":
             if not singleFileSelection:
-                currentFile = fb.getDirList()[actualFilePointer - 1]
-                selectedFolderPath = fb.structCurrentPath() + currentFile
-                fileCount = len(fb.getCopyQueue())
-                if len(fb.getCopyQueue()) == 0 or len(selectedDisplay) == 1:
-                    # Takes case if non of the folder or file is selected
-                    if os.path.isdir(selectedFolderPath):
-                        for i in listdir(selectedFolderPath):
-                            fb.addToCopyQueue(currentFile + "/" + i)
-                        fileCount = len(fb.getCopyQueue())
-                        # availableSlots += len(fb.getCopyQueue())
-                        rtn = RenderOptionsMenu(
-                            [upload_download + " " + str(fileCount) + " Patches",
-                             "Delete " + str(fileCount) + "Patches"])
-                    else:
-                        fb.addToCopyQueue(currentFile)
-                        # availableSlots += 1
-                        rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
+                if len(fb.getDirList()):
+                    currentFile = fb.getDirList()[actualFilePointer - 1]
+                    selectedFolderPath = fb.structCurrentPath() + currentFile
+                    fileCount = len(fb.getCopyQueue())
+
+                if len(selectedDisplay) == 0 and len(fb.getCopyQueue()) == 0:
+                    rtn = RenderOptionsMenu(["New Folder"], sort=False)
+                    if "New Folder" in rtn:
+                        name = renderRename("/New Folder", jsutName=True)
+                        if name != "":
+                            print(join(fb.currentDirPath, name), "Folder Created")
+                            try:
+                                createEmptyFolder(fb.currentDirPath, name)
+                                fb.updatePage()
+                            except OSError:
+                                print("Folder can not be created")
+                            print ("Folder Created")
+                        else:
+                            print ("Create Folder Canceled")
+
+                # if len(fb.getCopyQueue()) == 0 or len(selectedDisplay) == 1:
+                #     # Takes case if non of the folder or file is selected
+                #     if os.path.isdir(selectedFolderPath):
+                #         for i in listdir(selectedFolderPath):
+                #             fb.addToCopyQueue(currentFile + "/" + i)
+                #         fileCount = len(fb.getCopyQueue())
+                #         # availableSlots += len(fb.getCopyQueue())
+                #         rtn = RenderOptionsMenu(
+                #             [upload_download + " " + str(fileCount) + " Patches",
+                #              "Delete " + str(fileCount) + "Patches", "New Folder"], sort=False)
+                #     else:
+                #         fb.addToCopyQueue(currentFile)
+                #         # availableSlots += 1
+                #         rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"], sort=False)
+
                 else:
                     if fileCount == 1:
-                        rtn = RenderOptionsMenu([upload_download, "Rename", "Delete"])
+                        rtn = RenderOptionsMenu([upload_download, "Rename", "Move", "Delete"], sort=False)
 
                     else:
                         rtn = RenderOptionsMenu(
-                            [upload_download + " " + str(fileCount) + " Patches",
-                             "Delete " + str(fileCount) + "Patches"])
+                            [upload_download + " " + str(fileCount) + " Patches", "Move " + str(fileCount) + " Patches",
+                             "Delete " + str(fileCount) + "Patches"], sort=False)
 
                     # if rtn == "RETURN":
                     #     availableSlots += fileCount
@@ -496,7 +506,7 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
                     return selectedFolderPath
                     pass
                 else:
-                    rtn = RenderOptionsMenu(["Copy / Overwrite", "Cancel"], title="Upload to OP-Z")
+                    rtn = RenderOptionsMenu(["Copy / Overwrite", "Cancel"], title="Upload to OP-Z", sort=False)
 
                 if "Copy / Overwrite" in rtn:
                     currentFile = fb.getDirList()[actualFilePointer - 1]
@@ -507,26 +517,60 @@ def renderFolders(path, upload_download, dest, singleFileSelection=False):
                     print("Canceled")
                     return
 
+            # Main File Actions
             if "Upload" in rtn or "Backup" in rtn:
                 # List allowed
                 if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
                     try:
                         copyQueue = fb.getCopyQueue()
-
                         if dest == "":
                             dest = config["OP_1_Mounted_Dir"]
                         fileTransferHelper(copyQueue, dest)
                     except:
                         pass
 
+            elif "Move" in rtn:
+                # Move files within folder
+                if fb.getCopyQueue():
+                    temp = fb.getCopyQueue()[0]
+                    parentDir = dirname(dirname(temp))
+                    parentDirLst = os.listdir(parentDir)
+                    rtn = RenderOptionsMenu(parentDirLst, title="Move To ...", sort=False)
+                    if "RETURN" not in rtn:
+                        try:
+                            moveFilesToFolder(fb.getCopyQueue(), os.path.join(parentDir, rtn))
+                            fb.clearCopyQueue()
+                            selectedDisplay = []
+                            fb.updatePage()
+
+                        except OSError:
+                            print("File Moving Error")
+
+
             elif "Delete" in rtn:
                 # List allowed
-                if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
-                    try:
+                # if check_OP_1_Connection() and config["OP_1_Mounted_Dir"] != "":
+                try:
+                    if len(fb.getCopyQueue()) == 0:
+                        # Empty Folder Selected
+                        currentFolder = fb.getDirList()[actualFilePointer - 1]
+                        print(join(fb.structCurrentPath(), currentFolder))
+                        shutil.rmtree(join(fb.structCurrentPath(), currentFolder))
+                    else:
+                        # Deleting folder that have patches
+                        print("In!!")
                         deleteHelper(fb.getCopyQueue())
-                        fb.updatePage()
-                    except:
-                        pass
+                        # Current Folder is empty and no longer existed go to Prev Page
+                        if not os.path.exists(fb.structCurrentPath()):
+                            fb.prevPage()
+                            selectedDisplay = []
+                            selected = []
+                            fb.clearCopyQueue()
+                    # Finished deleting, refresh the file list for display
+                    fb.updatePage()
+
+                except OSError:
+                    pass
 
             elif "Rename" in rtn:
                 # Only one item is allowed
@@ -560,7 +604,7 @@ def renderOPZFolder(path, upload_download):
     shortArray = []
     interFolder = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
 
-    fb = fileBrowser(path)
+    fb = fileBrowserDT(path)
     # RenderFolders
     while True:
         image = Image.new('1', (128, 64))
@@ -653,7 +697,7 @@ def renderOPZFolder(path, upload_download):
 
         if key == "B":
             currentFile = fb.getDirList()[actualFilePointer - 1]
-            rtn = RenderOptionsMenu([upload_download, "Delete"])
+            rtn = RenderOptionsMenu([upload_download, "Delete"], sort=False)
             if "Choose From OP-1 Lib" in rtn:
                 if check_OP_Z_Connection() and config["OP_Z_Mounted_Dir"] != "":
                     try:
@@ -707,3 +751,4 @@ def renderOPZFolder(path, upload_download):
                         print("Deleted")
                     except:
                         pass
+                    fb.updatePage()

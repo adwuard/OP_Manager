@@ -17,8 +17,7 @@ class OP1Backup:
     def getLatestProjectName(self, path):
         """
         Search Project Names in a given folder path
-        And return next eligible folder name
-
+        And return next eligible folder name starting with "Project_"
         :param path:
         :return: New Folder Name
         """
@@ -84,29 +83,32 @@ class OP1Backup:
         Overwrite when redundant file occurs
         """
 
-        recursive_overwrite(config["OP_1_Mounted_Dir"] + "/synth", savePaths["Local_Synth"])
-        recursive_overwrite(config["OP_1_Mounted_Dir"] + "/drum", savePaths["Local_Drum"])
+        try:
+            recursive_overwrite(config["OP_1_Mounted_Dir"] + "/synth", savePaths["Local_Synth"])
+            recursive_overwrite(config["OP_1_Mounted_Dir"] + "/drum", savePaths["Local_Drum"])
+        except IOError:
+            print ("Copy Error")
 
     def backupOPZState(self):
-        OPZStatePath = config["OP_Z_Mounted_Dir"]
-        # currentTimeFolder = savePaths["OP_Z_Local_Backup_States_Path"] + "/" + self.getTime()
-        currentTimeFolder = savePaths["OP_Z_Local_Backup_States_Path"] + "/" + self.getLatestProjectName(
-            savePaths["OP_Z_Local_Backup_States_Path"])
-        print(OPZStatePath)
-        print(currentTimeFolder)
-        forcedir(currentTimeFolder)
-        try:
-            copy_tree(OPZStatePath, currentTimeFolder)
-            print("Finished CPY")
-        except:
-            shutil.rmtree(currentTimeFolder)
+        if os.listdir(config["OP_Z_Mounted_Dir"]):
+            OPZStatePath = config["OP_Z_Mounted_Dir"]
+            # currentTimeFolder = savePaths["OP_Z_Local_Backup_States_Path"] + "/" + self.getTime()
+            currentTimeFolder = savePaths["OP_Z_Local_Backup_States_Path"] + "/" + self.getLatestProjectName(
+                savePaths["OP_Z_Local_Backup_States_Path"])
+            print(OPZStatePath)
+            print(currentTimeFolder)
+            forcedir(currentTimeFolder)
+            try:
+                copy_tree(OPZStatePath, currentTimeFolder)
+                print("Finished CPY")
+            except:
+                shutil.rmtree(currentTimeFolder)
 
     def loadStateToOPZ(self, localPath):
         OPZStatePath = savePaths["OP_Z_Local_Backup_States_Path"]
-        print("Starting..")
+        print("Load local to OPZ")
         print(localPath)
         print(OPZStatePath)
-
         for root, dirs, files in os.walk(OPZStatePath):
             for f in files:
                 print("remove", f)
@@ -114,7 +116,6 @@ class OP1Backup:
             for d in dirs:
                 print("remove Dir", d)
                 shutil.rmtree(os.path.join(root, d))
-
-        print("Cleared")
+        print("OPZ Dir Cleared")
         copy_tree(localPath, OPZStatePath)
-        print("Finished CPY")
+        print("Finished Copying to OPZ")

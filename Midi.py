@@ -304,6 +304,7 @@ class MidiTool:
                 filteredLst.append(j)
             else:
                 flag = True
+            print ("Filtered:", filteredLst)
         return filteredLst
 
     def _availOutPortCheck(self):
@@ -383,6 +384,7 @@ class MidiTool:
         else:
             In, Out = self._availInPortCheck(), self._availOutPortCheck()
             print(self.usbIn.get_ports())
+            print(self.usbOut.get_ports())
             if In != None and Out != None:
                 image = Image.new('1', (128, 64))
                 image.paste(Image.open(workDir + "/Assets/Img/Midi.png").convert("1"))

@@ -5,17 +5,22 @@ WifiTransfer = [
     # "Connect", -1
 ]
 
-
-MIDI =[
+MIDI = [
     ["MIDI", -1],
     ["USB MIDI IN Test", "MIDI_In_Test"],
     ["USB MIDI OUT Test", "MIDI_Out_Test"]
+]
+op1fun = [
+    ["OP1.FUN", -1],
+    ["Packs", "OP1FUN_BrowsePacks"],
+    ["Download All Packs", "OP1FUN_DownloadAllPacks"]
 ]
 
 Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
     ["MIDI Host", "MIDI_Host"],
+    ["OP1.FUN", op1fun],
     ["SSH Transfer", "Check_IP"],
     ["Eject", "act_ESC_Eject"],
     # ["Power Off System", "act_POWER_OFF"],
@@ -53,7 +58,7 @@ PatchesPage = [
     ["Manage OP-1", OP_1_Patches]
 ]
 
-BackupPage =[
+BackupPage = [
     ["Backup", -1],
     ["Tracks + Album", "act_Backup_Project_From_OP_1"],
     ["Tracks", "act_Load_Project_From_Local_only_tracks"]
@@ -65,13 +70,11 @@ ProjectsPage = [
     ["Manage Local", "act_Load_Project_From_Local"]
 ]
 
-
 OP1 = [
     ["OP-1", -1],
     ["Projects", ProjectsPage],
     ["Patches", PatchesPage]
 ]
-
 
 OPZ = [
     ["OP-Z", -1],
@@ -89,4 +92,3 @@ MainPage = [
     ["Utilities", Utilities],
     ["Eject", "act_ESC_Eject"]
 ]
-
