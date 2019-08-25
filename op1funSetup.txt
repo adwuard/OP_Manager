@@ -1,6 +1,0 @@
-{
-    "USER_ID": "adwurdlai",
-    "USER_EMAIL": "p857211@gmail.com",
-    "PASSWORD": "",
-    "API_TOKEN": "YJtS__621nMfBMVFK5Gw"
-}
