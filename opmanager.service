@@ -1,0 +1,15 @@
+[Unit]
+Description=OPManager
+After=boot.service
+
+[Service]
+ExecStart=/usr/bin/sudo /usr/bin/python3 -u run.py
+WorkingDirectory=/home/pi/OP1_File_Organizer
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+
