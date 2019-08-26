@@ -7,7 +7,6 @@ from PIL import Image, ImageDraw
 
 from op1funRequests import op1funRequests, internetIsOn
 from Midi import MidiTool
-from SSH_Service import SSH_Service
 from FileBrowser import renderFolders, RenderOptionsMenu, renderRename, renderOPZFolder
 from GPIO_Init import getAnyKeyEvent, displayImage, getFont, getKeyStroke, getSmallFont, displayPng
 from OP_1_Connection import update_Current_Storage_Status, unmount_OP_1, check_OP_1_Connection, do_mount, \
@@ -413,11 +412,11 @@ class PageRouter:
                 displayImage(unmounting)
                 if unmount_OP_1():
                     time.sleep(1)
-                    unmounted = Image.new('1', (128, 64))
-                    draw = ImageDraw.Draw(unmounted)
-                    draw.text((0, 25), "Ejected", font=getFont(), fill='white')
-                    displayImage(unmounted)
-                    time.sleep(1)
+                    # unmounted = Image.new('1', (128, 64))
+                    # draw = ImageDraw.Draw(unmounted)
+                    # draw.text((0, 25), "Ejected", font=getFont(), fill='white')
+                    # displayImage(unmounted)
+                    # time.sleep(1)
             except:
                 pass
 

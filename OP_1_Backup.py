@@ -5,7 +5,7 @@ from os.path import isdir
 from config import config, savePaths
 from distutils.dir_util import copy_tree
 
-from file_util import forcedir, copyfile, recursive_overwrite
+from file_util import forcedir, copyfile, recursive_overwrite, copytree
 
 __author__ = "Hsuan Han Lai (Edward Lai)"
 __date__ = "2019-04-02"
@@ -105,7 +105,7 @@ class OP1Backup:
                 shutil.rmtree(currentTimeFolder)
 
     def loadStateToOPZ(self, localPath):
-        OPZStatePath = savePaths["OP_Z_Local_Backup_States_Path"]
+        OPZStatePath = config["OP_Z_Mounted_Dir"]
         print("Load local to OPZ")
         print(localPath)
         print(OPZStatePath)
@@ -117,5 +117,6 @@ class OP1Backup:
                 print("remove Dir", d)
                 shutil.rmtree(os.path.join(root, d))
         print("OPZ Dir Cleared")
-        copy_tree(localPath, OPZStatePath)
+        print("Copying to OPZ")
+        copytree(localPath, OPZStatePath)
         print("Finished Copying to OPZ")

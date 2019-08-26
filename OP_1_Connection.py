@@ -40,13 +40,18 @@ def mountdevice(source, target):
 
 
 def unmountdevice(target):
-    ret = os.system('umount {}'.format(target))
-    if ret != 0:
-        raise RuntimeError("Error unmounting {}: {}".format(target, ret))
-    os.system("sudo rm -R " + config["OP_1_Mounted_Dir"])
-    config["OP_1_Mounted_Dir"] = ""
-    config["OP_Z_Mounted_Dir"] = ""
-    # print("unmount op1 finised")
+    if "op1" in target:
+        ret = os.system('umount {}'.format(target))
+        if ret != 0:
+            raise RuntimeError("Error unmounting {}: {}".format(target, ret))
+        os.system("sudo rm -R " + config["OP_1_Mounted_Dir"])
+        config["OP_1_Mounted_Dir"] = ""
+    else:
+        ret = os.system('umount {}'.format(target))
+        if ret != 0:
+            raise RuntimeError("Error unmounting {}: {}".format(target, ret))
+        os.system("sudo rm -R " + config["OP_Z_Mounted_Dir"])
+        config["OP_Z_Mounted_Dir"] = ""
 
 
 def getmountpath(device):

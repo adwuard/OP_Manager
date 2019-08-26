@@ -20,7 +20,7 @@ Utilities = [
     ["Utilities", -1],
     ["Check Storage", "checkStorage"],
     ["MIDI Host", "MIDI_Host"],
-    ["OP1.FUN", op1fun],
+    ["op1.fun", op1fun],
     ["SSH Transfer", "Check_IP"],
     ["Eject", "act_ESC_Eject"],
     # ["Power Off System", "act_POWER_OFF"],

@@ -49,24 +49,6 @@ savePaths = {
     "OP_Z_Local_Backup_States_Path": os.path.join(config["OPZBackupPath"], "Backup_States")
 }
 
-# OP1Fun Account Login Info
-op1FunSetup = {
-    "USER_ID": "",
-    "Password": ""
-}
-# =========================== Display configuration ===========================
-# Display driver luma oled lib
-# Compatible displays: SSD1306, SSD1309, SSD1322, SSD1325, SSD1327, SSD1331, SSD1351 and SH1106
-# Port: i2C port
-# Address: Display i2c address
-displayConfig = {
-    "DisplayType": "SH1106",
-    # "DisplayType": "SSD1306",
-    "Rotation": 2,  # 0:0, 1:90, 2:180, 3:270
-    "port": 1,
-    "address": 0x3c
-}
-
 # =========================== Battery configuration ===========================
 # RaspiUPS uses MAX17043 chip set
 # ADS1115 not yet compatible
