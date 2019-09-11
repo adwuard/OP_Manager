@@ -51,7 +51,7 @@ Fill this form if you are interested buying one [Buy Request Form](https://docs.
 ## EXAMPLE UNIT
 * RPI W + 32GB + MIDI + Full size USB + Battery System  
 
-<img src="/documentation/68372175_2678265705519425_1045217593272565760_n.jpg" data-canonical-src="/documentation/68372175_2678265705519425_1045217593272565760_n.jpg" width="600" />
+<img src="/documentation/DSCF1056.jpg" data-canonical-src="/documentation/DSCF1056.jpg" width="600" />
 
 
 
