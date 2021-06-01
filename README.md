@@ -31,10 +31,6 @@ Be able to login and download packs to local library or OP1 directly.
 If you like my project, please support to keep this project going. Thank You!  
 [Buy me a cup of coffee ☕](http://tinyurl.com/y4jezlod)
 
-## Where can I get my unit?
-This project is still under developing. Eventually I wish to bring this project into production.  
-Fill this form if you are interested buying one [Buy Request Form](https://docs.google.com/forms/d/1X8iLhBRd5raKvjgKeI_BbXLz58yhPBtnHt0vC7C34Sw/edit)
-
 
 ## Hardware  
 - Raspberry Pi Zero W + SD card (16GB reccomended)  
